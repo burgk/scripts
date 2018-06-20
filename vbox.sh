@@ -1,26 +1,46 @@
 #!/usr/bin/env bash
+# Kevin Burg - burg.kevin@gmail.com
 # Script to query status and start/stop specific VirtualBox VMs
 
 VBOX=VBoxManage.exe
+RED="\033[1;31m"
+YELLOW="\033[1;33m"
+GREEN="\033[1;32m"
+BOLD="\033[1m"
+RESET="\033[0m"
+
 
 if [ "$1" = "list" ]
 then
-	"${VBOX}" list vms | cut -d"{" -f 1
+#	"${VBOX}" list vms | cut -d"{" -f 1
+	"${VBOX}" list vms | awk -F\" '{ print $2 }'
 	exit 0
 elif [ "$1" = "status" ]
 then
-	if [ $# = 1 ]
-	then
-		echo -e "Status requires a VM name, use list to get the list of VMs"
-	else
-		if [ $("${VBOX}" showvminfo "$2" | grep State | awk '{ print $2 }') = "running" ]
-		then
-			echo -e "$2" "is currently running"
-		else
-			echo -e "$2" "is currently powered off"
-		fi
-	exit 0
-	fi
+    for vm in $(vbox list)
+    do
+      if [ $("${VBOX}" showvminfo ${vm} | grep State | awk '{ print $2 }') = "running" ]
+      then
+        echo -e "${vm}" ":${GREEN} running${RESET}"
+      else
+        echo -e "${vm}" "${RED}: powered off${RESET}"
+      fi
+    done
+   exit 0
+# elif [ "$1" = "status" ]
+# then
+# 	if [ $# = 1 ]
+# 	then
+# 		echo -e "Status requires a VM name, use list to get the list of VMs"
+# 	else
+# 		if [ $("${VBOX}" showvminfo "$2" | grep State | awk '{ print $2 }') = "running" ]
+# 		then
+# 			echo -e "$2" "is currently running"
+# 		else
+# 			echo -e "$2" "is currently powered off"
+# 		fi
+#  	exit 0
+#	fi
 elif [ "$1" = "start" ] 
 then
 	if [ $# = 1 ]
