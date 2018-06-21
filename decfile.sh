@@ -1,4 +1,6 @@
 #!/usr/bin/bash
+# Kevin Burg - burg.kevin@gmail.com
+# Openssl based file decryption
 if [ $# -lt 2 ]
 then
 echo "Usage: $0 file-to-decrypt new-file-name"

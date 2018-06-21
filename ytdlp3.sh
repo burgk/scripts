@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
- 
+# Kevin Burg - burg.kevin@gmail.com 
+# Wrapper for youtube-dl
 if [ $# -eq 1 ]
 then
    

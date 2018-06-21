@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
- 
+# Kevin Burg - burg.kevin@gmail.com
+# Wrapper for mpv
 if [ $# -eq 1 ]
 then
    

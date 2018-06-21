@@ -1,5 +1,5 @@
 #!/bin/bash
- 
+# Kevin Burg - burg.kevin@gmail.com 
 # runpg.sh - wrapper to run password generator script with some entries set
 # other option include:
 # alnum, alpha, blank, cntrl, digit, graph, print, space, xdigit

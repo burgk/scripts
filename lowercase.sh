@@ -1,4 +1,5 @@
 #!/bin/bash
+# Kevin Burg - burg.kevin@gmail.com
 # change all filenames in directory to lowercase
  
 IFS=\

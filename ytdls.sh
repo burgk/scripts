@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Kevin Burg - burg.kevin@gmail.com
 # Use to download song playlists, can work for single songs
  
 # if [ $# -eq 1 ]

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Kevin Burg - burg.kevin@gmail.com
 # Iterate over the lines in a file and perform a command on each line
 
 INFILE=/home/burgk/scripts/masterserverinventorymissingls.txt

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# Kevin Burg - burg.kevin@gmail.com
 # Utility to start, stop or query the status of the Cisco services
 # It tries to be reasonably careful, but there are no guarantees :-)
 

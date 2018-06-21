@@ -1,6 +1,6 @@
 #!/usr/bin/bash
- 
-# Make sure we get a file name
+# Kevin Burg - burg.kevin@gmail.com 
+# Openssl based file encryption
 if [ $# -lt 1 ]
 then
 echo "Usage: $0 file-to-encrypt"

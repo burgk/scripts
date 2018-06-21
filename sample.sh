@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
- 
+# Kevin Burg - burg.kevin@gmail.com
+# Sample youtube-dl script
 if [ $# -eq 1 ]
 then
    

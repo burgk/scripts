@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# Kevin Burg - burg.kevin@gmail.com
 # Wrapper for ffmpeg to convert .ogg files to .mp3 files
 # At quality setting of 3 (~160k).
 

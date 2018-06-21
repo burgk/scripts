@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+# Kevin Burg - burg.kevin@gmail.com
 # Wrapper for ffmpeg to convert .ogg files to .mp3 files
 # lame quality settings:
 # 0 = ~245 - range: 220-260

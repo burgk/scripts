@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Kevin Burg - burg.kevin@gmail.com
 # Script to set ip address vi cli
 # Can set ip + subnet or ip + subnet + gateway
 # 4 options allow for dhcp, service lan and Centera node / switch configs

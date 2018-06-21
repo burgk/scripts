@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# Kevin Burg - burg.kevin@gmail.com
+# Basic bash array example
 filecontent=( $(cat array-in.txt) )
 
 for t in "${filecontent[@]}"
