@@ -22,7 +22,7 @@ then
 	exit 0
 elif [ "$1" = "status" ]
 then
-    for vm in $(vbox list)
+    for vm in $(vbox.sh list)
     do
       if [ $("${VBOX}" showvminfo ${vm} | grep State | awk '{ print $2 }') = "running" ]
       then
