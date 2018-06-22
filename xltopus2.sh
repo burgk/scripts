@@ -46,7 +46,7 @@ fi
 if [ $# -eq 1 ]
  then
   echo -e "Encoding ${INPUT} to ${OUTPUT} at ${CODECSCALE}"
-   $FF -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
+   $FF -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
 exit 0
 
 else
