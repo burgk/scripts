@@ -24,6 +24,9 @@ INFILEEXT=${1##*.}
 OUTPUT=${INFILEBASE}.mp3
 # BITRATE=$(mediainfo ${INPUT} | grep "Overall bit rate" | cut -d: -f2 | cut -d' ' -f2)
 BITRATE=$(mediainfo ${INPUT} | grep -E 'Overall.*kb/s' | sed 's/[^0-9]//g')
+F_RED="\e[38;2;255;0;0m"
+F_GREEN="\e[38;2;0;255;0m"
+RESET="\e[0m"
 
 setcodescale()
 {
@@ -55,12 +58,18 @@ encodefile()
 $FF -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
 }
 
+errormsg()
+{
+echo -e "${F_RED}Usage: $(basename $0) <inputfile>"
+echo -e "Currently ogg and opus files are suported${RESET}"
+}
+
 if [ $# -eq 1 ]
  then
   if [ ${INFILEEXT} = ogg ] || [ ${INFILEEXT} = opus ]
    then
     setcodescale
-    echo -e "Encoding ${INPUT} to ${OUTPUT} at ${CODECSCALE}"
+    echo -e "${F_GREEN}Encoding ${INPUT} to ${OUTPUT} at ${CODECSCALE}${RESET}"
     encodefile
     exit 0
   else
@@ -68,6 +77,6 @@ if [ $# -eq 1 ]
    exit 1
   fi
  else
-  echo "Usage: $(basename $0) <input.file>" 
+  errormsg
   exit 1
 fi
