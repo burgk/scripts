@@ -23,7 +23,8 @@ INFILEBASE=${1%.*}
 INFILEEXT=${1##*.}
 OUTPUT=${INFILEBASE}.mp3
 # BITRATE=$(mediainfo ${INPUT} | grep "Overall bit rate" | cut -d: -f2 | cut -d' ' -f2)
-BITRATE=$(mediainfo ${INPUT} | grep -E 'Overall.*kb/s' | sed 's/[^0-9]//g')
+# BITRATE=$(mediainfo ${INPUT} | grep -E 'Overall.*kb/s' | sed 's/[^0-9]//g')
+let "BITRATE = $(mediainfo --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
 F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
