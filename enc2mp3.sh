@@ -14,8 +14,26 @@
 # 8 = ~85 - range: 70-105
 # 9 = ~65 - range: 45-85
 
+which ffmpeg > /dev/null 2>&1
+if (( $? == 0 ))
+ then
+  FF=$(which ffmpeg)
+ else
+  echo -e "${F_RED}ffmpeg not found, exiting${RESET}"
+  exit 1
+fi
+
+which mediainfo > /dev/null 2>&1
+if (( $? == 0 ))
+ then
+  MI=$(which mediainfo)
+ else
+  echo -e "${F_RED}mediainfo not found, exiting${RESET}"
+  exit 1
+fi
+
 # FF=/usr/bin/ffmpeg
-FF=$(which ffmpeg)
+# FF=$(which ffmpeg)
 IFS='\'
 INPUT=$1
 # IFILEBASE=${1%%opus}
@@ -30,7 +48,7 @@ RESET="\e[0m"
 
 setcodescale()
 {
-let "BITRATE = $(mediainfo --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
+let "BITRATE = $(${MI} --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
 if [ ${BITRATE} -lt "65" ]
  then CODECSCALE=9
 elif [ ${BITRATE} -lt "85" ]
@@ -56,7 +74,7 @@ fi
 
 encodefile()
 {
-$FF -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
+${FF} -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
 }
 
 errormsg()
@@ -74,7 +92,7 @@ if [ $# -eq 1 ]
     encodefile
     exit 0
   else
-   echo -e "Only ogg or opus files currently supported. Exiting."
+   echo -e "Only ogg and opus files currently supported. Exiting."
    exit 1
   fi
  else
