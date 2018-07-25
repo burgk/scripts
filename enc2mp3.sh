@@ -87,7 +87,7 @@ if [ $# -eq 1 ]
     encodefile
     exit 0
   else
-   echo -e "Only ogg and opus files currently supported. Exiting."
+   echo -e "${F_RED}Only ogg and opus files currently supported. Exiting.${RESET}"
    exit 1
   fi
  else
