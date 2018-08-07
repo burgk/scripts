@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # Kevin Burg - burg.kevin@gmail.com
 # Wrapper for ffmpeg to convert ogg and opus files to .mp3 files
+# To match both *.opus and *.ogg files, try
+# ls @(*.ogg|*.opus)
+# Requires extglob to be set in the shell
 
 # libmp3lame quality settings:
 # 0 = ~245 - range: 220-260
