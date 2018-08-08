@@ -18,7 +18,7 @@
 # 9 = ~65 - range: 45-85
 
 IFS='\'
-INPUT=$1
+INPUT=${1}
 INFILEBASE=${1%.*}
 INFILEEXT=${1##*.}
 OUTPUT=${INFILEBASE}.mp3
