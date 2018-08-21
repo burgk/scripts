@@ -28,9 +28,9 @@ then
     do
       if [ $("${VBOX}" showvminfo ${vm} | grep State | awk '{ print $2 }') = "running" ]
       then
-        echo -e "${vm}" ":${GREEN} running${RESET}"
+        echo -e "${vm}:" "${GREEN} running${RESET}"
       else
-        echo -e "${vm}" "${RED}: powered off${RESET}"
+        echo -e "${vm}:" "${RED} powered off${RESET}"
       fi
     done
    exit 0
