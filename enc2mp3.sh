@@ -80,7 +80,8 @@ ${FF} -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CO
 errormsg()
 {
 echo -e "${F_RED}Usage: $(basename $0) <inputfile>"
-echo -e "Currently ogg and opus files are suported${RESET}"
+echo -e "Currently ogg and opus files are suported"
+echo -e "Requires ffmpeg and mediainfo to be installed${RESET}"
 }
 
 if [ $# -eq 1 ]
