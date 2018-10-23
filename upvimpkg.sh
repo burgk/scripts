@@ -19,8 +19,8 @@ updatepkg()
 
 usage()
 {
- echo -e "${F_RED}Requires option of native|n or pathogen|p depending on which you are using"
- echo -e "Typically vim 8+ uses native and I assume you are using your username"
+ echo -e "${F_RED}Requires option of --native|-n or --pathogen|-p depending on which you are using"
+ echo -e "Typically vim 8+ uses native. I assume you are using your username"
  echo -e "In the native package path.${RESET}"
  exit 1
 }
@@ -32,7 +32,7 @@ patherr()
 }
 
 case ${1} in
- native | n | -n)
+ --native | -n)
    if [ -d /home/${USER}/.vim/pack/${USER}/start ]
    then
     PKGPATH=/home/${USER}/.vim/pack/${USER}/start
@@ -41,7 +41,7 @@ case ${1} in
     patherr
    fi
    ;;
- pathogen | p | -p)
+ --pathogen | -p)
    if [ -d /home/${USER}/.vim/bundle ]
    then
     PKGPATH=/home/${USER}/.vim/bundle
