@@ -32,7 +32,7 @@ patherr()
 }
 
 case ${1} in
- native | n)
+ native | n | -n)
    if [ -d /home/${USER}/.vim/pack/${USER}/start ]
    then
     PKGPATH=/home/${USER}/.vim/pack/${USER}/start
@@ -41,7 +41,7 @@ case ${1} in
     patherr
    fi
    ;;
- pathogen | p)
+ pathogen | p | -p)
    if [ -d /home/${USER}/.vim/bundle ]
    then
     PKGPATH=/home/${USER}/.vim/bundle
