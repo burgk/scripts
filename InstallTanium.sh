@@ -42,7 +42,7 @@ fi
 ls ./[Tt]an*.rpm > /dev/null 2>&1
 if (( $? == 0 ))
  then
- INSTALLPKG=$(ls *.rpm)
+ INSTALLPKG=$(ls [Tt]an*.rpm)
 else
  echo -e "${F_RED}Tanium RPM file not found in this directory, exiting${RESET}"
  exit 1
@@ -51,7 +51,7 @@ fi
 ls ./[Tt]an*.pub > /dev/null 2>&1
 if (( $? == 0 ))
  then
- INSTALLPUB=$(ls *.pub)
+ INSTALLPUB=$(ls [Tt]an*.pub)
 else
  echo -e "${F_RED}Tanium .pub file not found in this directory, exiting${RESET}"
  exit 1
