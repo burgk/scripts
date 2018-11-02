@@ -10,8 +10,8 @@ F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
 
 if (( ${EUID} != 0 )); then
- echo "${F_RED}You need to be root or use sudo to run this script"
- echo "For example: sudo ./InstallTanium.sh${RESET}"
+ echo -e "${F_RED}You need to be root or use sudo to run this script"
+ echo -e "For example: sudo ./InstallTanium.sh${RESET}"
  exit 1
 fi
 
