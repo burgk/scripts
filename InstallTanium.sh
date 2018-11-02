@@ -107,7 +107,7 @@ elif [ ${RESPONSE} -eq 19 ]
 fi
 
 echo -e "Installing Tanium Package: ${F_GREEN}${INSTALLPKG}${RESET}"
-rpm -ivh ./${INSTALLPKG} > /dev/null 2&>1
+rpm -ivh ./${INSTALLPKG}
 sleep 5
 echo -e "Installing pub file: ${F_GREEN}${INSTALLPUB}${RESET}"
 cp ./${INSTALLPUB} /opt/Tanium/TaniumClient/
@@ -118,6 +118,6 @@ echo -e "  Tanium log verbosity level: ${F_GREEN}${VERBOSITY}${RESET}"
 /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${VERBOSITY}
 echo -e "Setting custom tag to: ${F_GREEN}${AGENCY}${RESET}"
 echo -e "${AGENCY}" > /opt/Tanium/TaniumClient/CustomTags.txt
-echo -e "${F_GREEN}Install Complete"
-echo -e "Please verify that firewall port 17472/TCP is open to ${SERVERIP}${RESET}"
+echo -e "${F_GREEN}Install Complete${RESET}"
+echo -e "${F_RED}Please verify that firewall port 17472/TCP is open to ${SERVERIP}${RESET}"
 exit 0
