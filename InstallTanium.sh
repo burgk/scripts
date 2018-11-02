@@ -109,7 +109,7 @@ fi
 echo -e "Installing Tanium Package: ${F_GREEN}${INSTALLPKG}${RESET}"
 rpm -ivh ./${INSTALLPKG}
 echo -e "Installing pub file: ${F_GREEN}${INSTALLPUB}${RESET}"
-cp ./${INSTALLPUB} /opt/tanium/TaniumClient
+cp ./${INSTALLPUB} /opt/tanium/TaniumClient/
 echo -e "Setting parameters:"
 echo -e "  Tanium server is: ${F_GREEN}${SERVERIP}${RESET}"
 echo -e "  Tanium log verbosity level: ${F_GREEN}${VERBOSITY}${RESET}"
