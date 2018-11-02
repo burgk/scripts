@@ -107,7 +107,8 @@ elif [ ${RESPONSE} -eq 19 ]
 fi
 
 echo -e "Installing Tanium Package: ${F_GREEN}${INSTALLPKG}${RESET}"
-rpm -ivh ./${INSTALLPKG}
+rpm -ivh ./${INSTALLPKG} > /dev/null 2&>1
+sleep 5
 echo -e "Installing pub file: ${F_GREEN}${INSTALLPUB}${RESET}"
 cp ./${INSTALLPUB} /opt/Tanium/TaniumClient/
 echo -e "Setting parameters:"
