@@ -106,16 +106,16 @@ elif [ ${RESPONSE} -eq 19 ]
 fi
 
 echo -e "Installing Tanium Package: ${F_GREEN}${INSTALLPKG}${RESET}"
-# rpm -ivh ./${INSTALLPKG}
+rpm -ivh ./${INSTALLPKG}
 echo -e "Installing pub file: ${F_GREEN}${INSTALLPUB}${RESET}"
-# cp ./${INSTALLPUB} /opt/tanium/TaniumClient
+cp ./${INSTALLPUB} /opt/tanium/TaniumClient
 echo -e "Setting parameters:"
 echo -e "  Tanium server is: ${F_GREEN}${SERVERIP}${RESET}"
 echo -e "  Tanium log verbosity level: ${F_GREEN}${VERBOSITY}${RESET}"
-# /opt/tanium/TaniumClient/TaniumClient config set ServerNameList ${SERVERIP}
-# /opt/tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${VERBOSITY}
+/opt/tanium/TaniumClient/TaniumClient config set ServerNameList ${SERVERIP}
+/opt/tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${VERBOSITY}
 echo -e "Setting custom tag to: ${F_GREEN}${AGENCY}${RESET}"
-# echo -e "${AGENCY}" > /opt/tanium/TaniumClient/CustomTags.txt
+echo -e "${AGENCY}" > /opt/tanium/TaniumClient/CustomTags.txt
 echo -e "${F_GREEN}Install Complete"
 echo -e "Please verify that firewall port 17472/TCP is open to ${SERVERIP}${RESET}"
 exit 0
