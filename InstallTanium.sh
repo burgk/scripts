@@ -5,6 +5,7 @@
 PUBLICSERVERIP=165.127.219.171
 OITSERVERIP=10.51.2.112
 VERBOSITY=0
+SERVERPORT=17472
 F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
@@ -15,7 +16,30 @@ if (( ${EUID} != 0 )); then
  exit 1
 fi
 
-ls ./*.rpm > /dev/null 2>&1
+if [ -e /etc/redhat-release ]
+ then
+ LINUX=$(cat /etc/redhat-release | awk -F' ' '{ print $1}')
+ if [[ ${LINUX} != "Red" ]]
+ then
+  echo -e "${F_RED}This does not appear to be a RHEL 7 system, exiting${RESET}"
+  exit 1
+ else
+  RHELVER=$(cat /etc/redhat-release | awk -F' ' '{ print $7 }')
+  case ${RHELVER} in
+   7.0 | 7.1 | 7.2 | 7.3 | 7.4 | 7.5 | 7.6)
+   ;;
+   *)
+   echo -e "${F_RED}This script does not support RHEL version ${RHELVER}, exiting"
+   exit 1
+   ;;
+  esac
+ fi
+ else
+  echo -e "${F_RED}This does not appear to be a RHEL system, exiting${RESET}"
+  exit 1
+fi
+
+ls ./[Tt]an*.rpm > /dev/null 2>&1
 if (( $? == 0 ))
  then
  INSTALLPKG=$(ls *.rpm)
@@ -24,7 +48,7 @@ else
  exit 1
 fi
 
-ls ./*.pub > /dev/null 2>&1
+ls ./[Tt]an*.pub > /dev/null 2>&1
 if (( $? == 0 ))
  then
  INSTALLPUB=$(ls *.pub)
@@ -40,6 +64,7 @@ echo -e "     / / / ___ |/ /|  // // /_/ / /  / /"
 echo -e "    /_/ /_/  |_/_/ |_/___/\____/_/  /_/${RESET}"
 
 echo -e "\n"
+echo -e "This script is for Redhat Enterprise Linux version 7"
 echo -e "This script supports the following Agencies:"
 echo -e "  1 - CDA \t\t 11 - DOC"
 echo -e "  2 - CDHS \t\t 12 - DOLA"
@@ -112,12 +137,16 @@ sleep 5
 echo -e "Installing pub file: ${F_GREEN}${INSTALLPUB}${RESET}"
 cp ./${INSTALLPUB} /opt/Tanium/TaniumClient/
 echo -e "Setting parameters:"
-echo -e "  Tanium server is: ${F_GREEN}${SERVERIP}${RESET}"
+echo -e "  Tanium server IP: ${F_GREEN}${SERVERIP}${RESET}"
+echo -e "  Tanium server port: ${F_GREEN}${SERVERPORT}${RESET}"
 echo -e "  Tanium log verbosity level: ${F_GREEN}${VERBOSITY}${RESET}"
 /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${SERVERIP}
+/opt/Tanium/TaniumClient/TaniumClient config set ServerPort ${SERVERPORT}
 /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${VERBOSITY}
 echo -e "Setting custom tag to: ${F_GREEN}${AGENCY}${RESET}"
 echo -e "${AGENCY}" > /opt/Tanium/TaniumClient/CustomTags.txt
+echo -e "Starting TaniumClient service"
+/usr/bin/systemctl start taniumclient
 echo -e "${F_GREEN}Install Complete${RESET}"
-echo -e "${F_RED}Please verify that firewall port 17472/TCP is open to ${SERVERIP}${RESET}"
+echo -e "${F_RED}Please verify that firewall port ${SERVERPORT}/TCP is open to ${SERVERIP}${RESET}"
 exit 0
