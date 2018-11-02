@@ -9,6 +9,12 @@ F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
 
+if (( ${EUID} != 0 )); then
+ echo "${F_RED}You need to be root or use sudo to run this script"
+ echo "For example: sudo ./InstallTanium.sh${RESET}"
+ exit 1
+fi
+
 ls ./*.rpm > /dev/null 2>&1
 if (( $? == 0 ))
  then
@@ -17,18 +23,13 @@ else
  echo -e "${F_RED}Tanium RPM file not found in this directory, exiting${RESET}"
  exit 1
 fi
+
 ls ./*.pub > /dev/null 2>&1
 if (( $? == 0 ))
  then
  INSTALLPUB=$(ls *.pub)
 else
  echo -e "${F_RED}Tanium .pub file not found in this directory, exiting${RESET}"
- exit 1
-fi
-
-if (( ${EUID} != 0 )); then
- echo "${F_RED}You need to be root or use sudo to run this script"
- echo "For example: sudo ./InstallTanium.sh${RESET}"
  exit 1
 fi
 
