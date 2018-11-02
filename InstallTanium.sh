@@ -6,6 +6,8 @@ PUBLICSERVERIP=165.127.219.171
 OITSERVERIP=10.51.2.112
 VERBOSITY=0
 SERVERPORT=17472
+TANIUMRPMSUM="84158937aa804380d4c9897cff14909d25b92313caae0f15f94ea8873dc389fe"
+TANIUMPUBSUM="62a9f750e234c897e1a543d13afab3346a6e3544312bf762ab0c278a45545b9d"
 F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
@@ -43,6 +45,12 @@ ls ./[Tt]an*.rpm > /dev/null 2>&1
 if (( $? == 0 ))
  then
  INSTALLPKG=$(ls [Tt]an*.rpm)
+ if [[ ${TANIUMRPMSUM} != $(sha256sum ${INSTALLPKG} | awk -F' ' '{ print $1 }') ]]
+  then
+   echo -e "${F_RED}Tanium RPM sha256sum does not match, file may be corrupt"
+   echo -e "Please download a fresh copy and try again. Script will now exit.${RESET}"
+   exit 1
+ fi
 else
  echo -e "${F_RED}Tanium RPM file not found in this directory, exiting${RESET}"
  exit 1
@@ -52,6 +60,12 @@ ls ./[Tt]an*.pub > /dev/null 2>&1
 if (( $? == 0 ))
  then
  INSTALLPUB=$(ls [Tt]an*.pub)
+ if [[ ${TANIUMPUBSUM} != $(sha256sum ${INSTALLPUB} | awk -F' ' '{ print $1 }') ]]
+  then
+   echo -e "${F_RED}Tanium pub sha256sum does not match, file may be corrupt"
+   echo -e "Please download a fresh copy and try again. Script will now exit${RESET}"
+   exit 1
+ fi
 else
  echo -e "${F_RED}Tanium .pub file not found in this directory, exiting${RESET}"
  exit 1
