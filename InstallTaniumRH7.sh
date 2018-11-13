@@ -158,7 +158,7 @@ echo -e "  Tanium log verbosity level: ${F_GREEN}${VERBOSITY}${RESET}"
 /opt/Tanium/TaniumClient/TaniumClient config set ServerPort ${SERVERPORT}
 /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${VERBOSITY}
 echo -e "Setting custom tag to: ${F_GREEN}${AGENCY}${RESET}"
-echo -e "${AGENCY}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+echo -e "~~${AGENCY}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
 echo -e "Starting TaniumClient service"
 /usr/bin/systemctl start taniumclient
 echo -e "${F_GREEN}Install Complete${RESET}"
