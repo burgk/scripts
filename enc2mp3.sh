@@ -28,19 +28,17 @@ F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
 
-which ffmpeg > /dev/null 2>&1
-if (( $? == 0 ))
+if command -v ffmpeg > /dev/null 2>&1
  then
-  FF=$(which ffmpeg)
+  FF=$(command -v ffmpeg)
  else
   echo -e "${F_RED}ffmpeg not found, exiting${RESET}"
   exit 1
 fi
 
-which mediainfo > /dev/null 2>&1
-if (( $? == 0 ))
+if command -v mediainfo > /dev/null 2>&1
  then
-  MI=$(which mediainfo)
+  MI=$(command -v mediainfo)
  else
   echo -e "${F_RED}mediainfo not found, exiting${RESET}"
   exit 1
@@ -48,7 +46,8 @@ fi
 
 setcodescale()
 {
-let "BITRATE = $(${MI} --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
+# let "BITRATE = $(${MI} --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
+(( BITRATE = $(${MI} --Inform="General;%OverallBitRate%" "${INPUT}") / 1000 ))
 if [ ${BITRATE} -lt "65" ]
  then CODECSCALE=9
 elif [ ${BITRATE} -lt "85" ]
@@ -74,19 +73,19 @@ fi
 
 encodefile()
 {
-${FF} -hide_banner -loglevel panic -i ${INPUT} -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 ${OUTPUT}
+${FF} -hide_banner -loglevel panic -i "${INPUT}" -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 "${OUTPUT}"
 }
 
 errormsg()
 {
-echo -e "${F_RED}Usage: $(basename $0) <inputfile>"
+echo -e "${F_RED}Usage: $(basename "$0") <inputfile>"
 echo -e "Currently ogg and opus files are suported"
 echo -e "Requires ffmpeg and mediainfo to be installed${RESET}"
 }
 
 if [ $# -eq 1 ]
  then
-  if [ ${INFILEEXT} = ogg ] || [ ${INFILEEXT} = opus ]
+  if [ "${INFILEEXT}" = ogg ] || [ "${INFILEEXT}" = opus ]
    then
     setcodescale
     echo -e "${F_GREEN}Encoding ${INPUT} to ${OUTPUT} at ${CODECSCALE}${RESET}"
