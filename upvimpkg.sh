@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/bin/bash
 # Quick script to update git repository vim packages.
 # Can update packages in pathogen or native  paths
 # For native it assumes the username is used in the path
