@@ -2,9 +2,43 @@
 # Script to install supported Linux Tanium clients
 # Kevin Burg - kevin.burg@state.co.us
 
+# Misc variable definions #{{{
+oitserverip=10.51.2.112
+publicserverip=165.127.219.171
+taniumport=17472
+verbosity=0
+# Console colors
 f_red="\e[38;2;255;0;0m"
 f_green="\e[38;2;0;255;0m"
 reset="\e[0m"
+# Tanium packages and files
+taniumpub="tanium.pub"
+debian67_32="./taniumclient_7.2.314.3476-debian6_i386.deb"
+debian67_64="./taniumclient_7.2.314.3476-debian6_amd64.deb"
+debian8_32="./taniumclient_7.2.314.3476-debian8_i386.deb"
+debian8_64="./taniumclient_7.2.314.3476-debian8_amd64.deb"
+debian9_32="./taniumclient_7.2.314.3476-debian9_i386.deb"
+debian9_64="./taniumclient_7.2.314.3476-debian9_amd64.deb"
+oracle5_32="./TaniumClient-7.2.314.3476-1.oel5.i386.rpm"
+oracle5_64="./TaniumClient-7.2.314.3476-1.oel5.x86_64.rpm"
+oracle6_32="./TaniumClient-7.2.314.3476-1.oel6.i686.rpm"
+oracle6_64="./TaniumClient-7.2.314.3476-1.oel6.x86_64.rpm"
+oracle7_64="./TaniumClient-7.2.314.3476-1.oel7.x86_64.rpm"
+rhel5_32="./TaniumClient-7.2.314.3476-1.rhe5.i386.rpm"
+rhel5_64="./TaniumClient-7.2.314.3476-1.rhe5.x86_64.rpm"
+rhel6_32="./TaniumClient-7.2.314.3476-1.rhe6.i686.rpm"
+rhel6_64="./TaniumClient-7.2.314.3476-1.rhe6.x86_64.rpm"
+rhel7_64="./TaniumClient-7.2.314.3476-1.rhe7.x86_64.rpm"
+suse11_32="./TaniumClient-7.2.314.3476-1.sle11.i586.rpm"
+suse11_64="./TaniumClient-7.2.314.3476-1.sle11.x86_64.rpm"
+suse12_32="./TaniumClient-7.2.314.3476-1.sle12.i586.rpm"
+suse12_64="./TaniumClient-7.2.314.3476-1.sle12.x86_64.rpm"
+ubuntu10_32="./taniumclient_6.0.314.3476-ubuntu10_i386.deb"
+ubuntu10_64="./taniumclient_7.2.314.3476-ubuntu10_amd64.deb"
+ubuntu14_64="./taniumclient_7.2.314.3476-ubuntu14_amd64.deb"
+ubuntu16_64="./taniumclient_7.2.314.3476-ubuntu16_amd64.deb"
+ubuntu18_64="./taniumclient_7.2.314.3476-ubuntu18_amd64.deb"
+#}}}
 
 check_root() { #{{{
   if (( ${EUID} != 0 )); then
@@ -22,7 +56,7 @@ if [[ ${operatingsystem} != *inux* ]]; then
   exit 1
 fi
 
-if [[ -e /etc/os-release ]]; then
+if [[ -e /etc/os-release ]]; then # Should get most supported systems
   distro=$(grep ^NAME /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"')
   case ${distro} in
   CentOS | Oracle | SUSE | openSUSE | Debian | debian | Ubuntu)
@@ -36,7 +70,14 @@ if [[ -e /etc/os-release ]]; then
     supported_distro=false
   ;;
   esac
-else
+elif [[ -e /etc/lsb-release ]]; then # Gets old Ubuntu
+  distro=$(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{print $2}' | tr -d '"')
+  if [[ ${distro} = *buntu* ]]; then
+    supported_distro=true
+  else
+    supported_distro=false
+  fi
+else # Gets old Debian
   distro=$(for f in $(find /etc -maxdepth 1 -type f \( ! -path /etc/lsb-release -path /etc/\*release -o -path /etc/\*version \) ); do echo ${f:5:${#f}-13};done)
     if [[ ${distro} = *ebian ]]; then
       supported_distro=true
@@ -90,13 +131,13 @@ if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "O
   else
     supportedver=false
   fi
-elif [[ ${distro} = "SUSE" ]] || [[ ${distro} = "openSUSE" ]]; then
+elif [[ ${distro} = *USE ]]; then # SUSE or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver=true
   else
     supportedver=false
   fi
-elif [[ ${distro} = *ebian ]]; then
+elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
     supportedver=true
   else
@@ -108,6 +149,8 @@ elif [[ ${distro} = "Ubuntu" ]]; then
   else
     supportedver=false
   fi
+else
+  supportedver=false
 fi
 } #}}}
 
@@ -121,46 +164,138 @@ architecture=$(uname -m)
 } #}}}
 
 validate_arch() { #{{{
-case ${distro} in
-  Redhat | CentOS | Oracle)
-    if [[ ${majversion} = 5 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 5 && ${architecture} = i*86 ]]; then
-      supportedarch=true
-    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
-      supportedarch=true
-    elif [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
-      supportedarch=true
-    else
-      supportedarch=false
+if [[ ${architecture} = "x86_64" ]] || [[ ${architecture} = i*86 ]]; then
+  case ${distro} in
+    Redhat | CentOS | Oracle)
+      if [[ ${majversion} = 5 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 5 && ${architecture} = i*86 ]]; then
+        supportedarch=true
+      elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
+        supportedarch=true
+      elif [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+        supportedarch=true
+      else
+        supportedarch=false
+      fi
+    ;;
+    Debian | debian)
+      if [[ ${supportedver} = true ]]; then
+        supportedarch=true
+      else
+        supportedarch=false
+      fi
+      ;;
+    SUSE | openSUSE)
+      if [[ ${supportedver} = true ]]; then
+        supportedarch=true
+      else
+        supportedarch=false
+      fi
+    ;;
+    Ubuntu)
+      if [[ ${majversion} = 14 && ${architecture} = "x86_64" ]]; then
+        supportedarch=true
+      elif [[ ${majversion} = 16 && ${architecture} = "x86_64" ]]; then
+        supportedarch=true
+      elif [[ ${majversion} = 18 && ${architecture} = "x86_64" ]]; then
+        supportedarch=true
+      elif [[ ${majversion} = 10 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 10 && ${architecture} = i*86 ]]; then
+        supportedarch=true
+      else
+        supportedarch=false
+      fi
+      ;;
+    *)
+      if [[ ${architecture} = "x86_64" ]] || [[ ${architecture} = i*86 ]]; then
+        supportedarch=true
+      else
+        supportedarch=false
+      fi
+      ;;
+  esac
+else
+  echo -e "${f_red}This script is only for Intel/AMD x86 type architecture"
+  echo -e "Script found ${architecture}, which is not supported.${reset}"
+  exit 1
+fi
+} #}}}
+
+select_package() { #{{{
+if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]]; then
+  case $distro in
+  Redhat | CentOS)
+    if [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+      installpkg=${rhel7_64}
+    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installpkg=${rhel6_64}
+    elif [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
+      installpkg=${rhel6_32}
+    elif [[ ${majversion} = 5 && ${architecture} = "x86_64" ]];then
+      installpkg=${rhel5_64}
+    else [[ ${majversion} = 5 && ${architecture} = i*86 ]]
+      installpkg=${rhel5_32}
+    fi
+  ;;
+  Oracle)
+    if [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+      installpkg=${oracle7_64}
+    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installpkg=${oracle6_64}
+    elif [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
+      installpkg=${oracle6_32}
+    elif [[ ${majversion} = 5 && ${architecture} = "x86_64" ]];then
+      installpkg=${oracle5_64}
+    else [[ ${majversion} = 5 && ${architecture} = i*86 ]]
+      installpkg=${oracle5_32}
+    fi
+  ;;
+  SUSE | openSUSE)
+    if [[ ${majversion} = 12 && ${architecture} = "x86_64" ]]; then
+      installpkg=${suse12_64}
+    elif [[ ${majversion} = 12 && ${architecture} = i*86 ]]; then
+      installpkg=${suse12_32}
+    elif [[ ${majversion} = 11 && ${architecture} = "x86_64" ]]; then
+      installpkg=${suse11_64}
+    else [[ ${majversion} = 11 && ${architecture} = i*86 ]]
+      installpkg=${suse11_32}
     fi
   ;;
   Debian | debian)
-    if [[ ${supportedver} = true ]]; then
-      supportedarch=true
-    else
-      supportedarch=false
-    fi
-    ;;
-  SUSE | openSUSE)
-    if [[ ${supportedver} = true ]]; then
-      supportedarch=true
-    else
-      supportedarch=false
+    if [[ ${majversion} = 9 && ${architecture} = "x86_64" ]]; then
+      installpkg=${debian9_64}
+    elif [[ ${majversion} = 9 && ${architecture} = i*86 ]]; then
+      installpkg=${debian9_32}
+    elif [[ ${majversion} = 8 && ${architecture} = "x86_64" ]]; then
+      installpkg=${debian8_64}
+    elif [[ ${majversion} = 8 && ${architecture} = i*86 ]]; then
+      installpkg=${debian8_32}
+    elif [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+      installpkg=${debian67_64}
+    elif [[ ${majversion} = 7 && ${architecture} = i*86 ]]; then
+      installpkg=${debian67_32}
+    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installpkg=${debian67_64}
+    else [[ ${majversion} = 6 && ${architecture} = i*86 ]]
+      installpkg=${debian67_32}
     fi
   ;;
   Ubuntu)
-    if [[ ${majversion} = 14 && ${architecture} = "x86_64" ]]; then
-      supportedarch=true
-    elif [[ ${majversion} = 16 && ${architecture} = "x86_64" ]]; then
-      supportedarch=true
-    elif [[ ${majversion} = 18 && ${architecture} = "x86_64" ]]; then
-      supportedarch=true
-    elif [[ ${majversion} = 10 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 10 && ${architecture} = i*86 ]]; then
-      supportedarch=true
-    else
-      supportedarch=false
+    if [[ ${majversion} = 18 ]]; then
+      installpkg=${ubuntu18_64}
+    elif [[ ${majversion} = 16 ]]; then
+      installpkg=${ubuntu16_64}
+    elif [[ ${majversion} = 14 ]]; then
+      installpkg=${ubuntu14_64}
+    elif [[ ${majversion} = 10 && ${architecture} = "x86_64" ]]; then
+      installpkg=${ubuntu10_64}
+    else [[ ${majversion} = 10 && ${architecture} = i*86 ]]
+      installpkg=${ubuntu10_32}
     fi
-    ;;
+  ;;
 esac
+else
+  echo -e "${f_red}Not a supported configuration, exiting${reset}"
+  exit 1
+fi
 } #}}}
 
 get_domain() { #{{{
@@ -183,16 +318,21 @@ get_distro
 get_distroversion
 validate_distroversion
 get_arch
-# validate_arch
+validate_arch
 get_domain
+select_package
 # show_banner
 echo -e "Found distribution: ${distro}"
+echo -e "Supported distro: ${supported_distro}"
 echo -e "Found version: ${majversion}"
+echo -e "Supported version: ${supportedver}"
 echo -e "Found architecture: ${architecture}"
+echo -e "Supported arch: ${supportedarch}"
 # echo -e "Suggest agency is ${DOMAIN}"
-if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]]; then
- echo -e "${f_green}This is a supported configuration${reset}"
- else
- echo -e "${f_red}This is NOT a supported configuration${reset}"
+if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]]; then
+  echo -e "${f_green}This is a supported configuration${reset}"
+  echo -e "Will install ${installpkg}"
+else
+  echo -e "${f_red}This is NOT a supported configuration${reset}"
 fi
 exit 0
