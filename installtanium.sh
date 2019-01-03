@@ -59,7 +59,7 @@ fi
 if [[ -e /etc/os-release ]]; then # Should get most supported systems
   distro=$(grep ^NAME /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"')
   case ${distro} in
-  CentOS | Oracle | SUSE | SLES | openSUSE | Debian | debian | Ubuntu)
+  CentOS | Oracle | SLES | openSUSE | Debian | debian | Ubuntu)
     supported_distro=true
   ;;
   Red)
@@ -77,6 +77,13 @@ elif [[ -e /etc/lsb-release ]]; then # Gets old Ubuntu
   else
     supported_distro=false
   fi
+elif [[ -e /etc/SuSE-release ]]; then # Gets old openSuse
+  distro=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $1}')
+  if [[ ${distro} = "openSUSE" ]]; then
+    supported_distro=true
+  else
+    supported_distro=false
+  fi
 else # Gets old Debian
   distro=$(for f in $(find /etc -maxdepth 1 -type f \( ! -path /etc/lsb-release -path /etc/\*release -o -path /etc/\*version \) ); do echo ${f:5:${#f}-13};done)
     if [[ ${distro} = *ebian ]]; then
@@ -89,8 +96,12 @@ fi
 
 get_distroversion() { #{{{
 case ${distro} in
-  CentOS | Oracle | SUSE | SLES | openSUSE | Redhat)
-    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
+  CentOS | Oracle | SLES | openSUSE | Redhat)
+    if [[ -e /etc/os-release ]]; then
+      majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
+    elif [[ -e /etc/SuSE-release ]]; then
+      majversion=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $2}' | awk -F '.' '{print $1}')
+    fi
   ;;
   Debian | debian)
     # Debian codenames: Squeeze=6, Wheezy=7, Jessie=8, Stretch=9, Buster=10, Bullseye=11, sid=experimental
@@ -131,7 +142,7 @@ if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "O
   else
     supportedver=false
   fi
-elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SUSE or openSUSE
+elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver=true
   else
@@ -184,7 +195,7 @@ if [[ ${architecture} = "x86_64" ]] || [[ ${architecture} = i*86 ]]; then
         supportedarch=false
       fi
       ;;
-    SUSE | SLES | openSUSE)
+    SLES | openSUSE)
       if [[ ${supportedver} = true ]]; then
         supportedarch=true
       else
@@ -248,7 +259,7 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
       installpkg=${oracle5_32}
     fi
   ;;
-  SUSE | SLES | openSUSE)
+  SLES | openSUSE)
     if [[ ${majversion} = 12 && ${architecture} = "x86_64" ]]; then
       installpkg=${suse12_64}
     elif [[ ${majversion} = 12 && ${architecture} = i*86 ]]; then
@@ -300,7 +311,7 @@ fi
 
 get_domain() { #{{{
  tmpdomain=$(hostname -d | awk -F'.' '{print $1}')
- domain=${tmpdomain^^}
+ domain=${tmpdomain^^} # not supported in bash < 4
 } #}}}
 
 show_banner() { #{{{
