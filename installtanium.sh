@@ -33,19 +33,19 @@ suse11_32="./TaniumClient-7.2.314.3476-1.sle11.i586.rpm"
 suse11_64="./TaniumClient-7.2.314.3476-1.sle11.x86_64.rpm"
 suse12_32="./TaniumClient-7.2.314.3476-1.sle12.i586.rpm"
 suse12_64="./TaniumClient-7.2.314.3476-1.sle12.x86_64.rpm"
-ubuntu10_32="./taniumclient_6.0.314.3476-ubuntu10_i386.deb"
-ubuntu10_64="./taniumclient_7.2.314.3476-ubuntu10_amd64.deb"
+ubuntu10_32="./taniumclient_6.0.314.1579-ubuntu10_i386.deb"
+ubuntu10_64="./taniumclient_6.0.314.1579-ubuntu10_amd64.deb"
 ubuntu14_64="./taniumclient_7.2.314.3476-ubuntu14_amd64.deb"
 ubuntu16_64="./taniumclient_7.2.314.3476-ubuntu16_amd64.deb"
 ubuntu18_64="./taniumclient_7.2.314.3476-ubuntu18_amd64.deb"
 #}}}
 
 check_root() { #{{{
-  if (( ${EUID} != 0 )); then
-    echo -e "${f_red}You need to be root or use sudo to run this script"
-    echo -e "For example: sudo ./$(basename ${0})${reset}"
-    exit 1
-  fi
+if (( ${EUID} != 0 )); then
+  echo -e "${f_red}You need to be use sudo or be root to run this script"
+  echo -e "For example: sudo ./$(basename ${0})${reset}"
+  exit 1
+ fi
 } #}}}
 
 get_distro() { #{{{
@@ -61,36 +61,55 @@ if [[ -e /etc/os-release ]]; then # Should get most supported systems
   case ${distro} in
   CentOS | Oracle | SLES | openSUSE | Debian | debian | Ubuntu)
     supported_distro=true
+    return
   ;;
   Red)
     distro="Redhat"
     supported_distro=true
+    return
   ;;
   *)
     supported_distro=false
+    return
   ;;
   esac
+elif [[ -e /etc/oracle-release ]]; then # Get old Oracle
+  distro=Oracle
+  supported_distro=true
+  return
+elif [[ -e /etc/centos-release ]]; then # Get old CentOS
+  distro=CentOS
+  supported_distro=true
+  return
+elif [[ -e /etc/redhat-release ]]; then # Get old Redhat
+  distro="Redhat"
+  supported_distro=true
+  return
 elif [[ -e /etc/lsb-release ]]; then # Gets old Ubuntu
   distro=$(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{print $2}' | tr -d '"')
   if [[ ${distro} = *buntu* ]]; then
     supported_distro=true
+    return
   else
     supported_distro=false
+    return
   fi
 elif [[ -e /etc/SuSE-release ]]; then # Gets old openSuse
   distro=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $1}')
   if [[ ${distro} = "openSUSE" ]]; then
     supported_distro=true
+    return
   else
     supported_distro=false
+    return
   fi
-else # Gets old Debian
-  distro=$(for f in $(find /etc -maxdepth 1 -type f \( ! -path /etc/lsb-release -path /etc/\*release -o -path /etc/\*version \) ); do echo ${f:5:${#f}-13};done)
-    if [[ ${distro} = *ebian ]]; then
-      supported_distro=true
-    else
-      supported_distro=false
-    fi
+elif [[ -e /etc/debian_version ]]; then # Gets old Debian
+  distro=Debian
+  supported_distro=true
+  return
+else # Unsupported distro
+  echo -e "${f_red}Unable to determine Linux distribution, exiting${reset}"
+  exit 1
 fi
 } #}}}
 
@@ -99,7 +118,13 @@ case ${distro} in
   CentOS | Oracle | SLES | openSUSE | Redhat)
     if [[ -e /etc/os-release ]]; then
       majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
-    elif [[ -e /etc/SuSE-release ]]; then
+    elif [[ -e /etc/oracle-release ]]; then # Get old Oracle version
+      majversion=$(awk -F' ' '{print $5}' /etc/oracle-release | awk -F'.' '{print $1}')
+    elif [[ -e /etc/centos-release ]]; then # Get old CentOS version
+      majversion=$(awk -F' ' '{print $5}' /etc/centos-release | awk -F'.' '{print $1}')
+    elif [[ -e /etc/redhat-release ]]; then # Get old Redhat version
+      majversion=$(awk -F' ' '{print $7}' /etc/redhat-release | awk -F'.' '{print $1}')
+    elif [[ -e /etc/SuSE-release ]]; then # Get old openSUSE
       majversion=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $2}' | awk -F '.' '{print $1}')
     fi
   ;;
@@ -125,13 +150,6 @@ case ${distro} in
   Ubuntu)
     majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{print $2}' | awk -F'.' '{print $1}')
   ;;
-  *)
-    if [[ -e /etc/os-release ]]; then
-      majversion=$(grep -w ^VERSION /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
-    else
-      majversion="Unknown"
-    fi
-    ;;
 esac
 } #}}}
 
@@ -139,90 +157,44 @@ validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then
   if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
     supportedver=true
+    return
   else
     supportedver=false
+    return
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver=true
+    return
   else
     supportedver=false
+    return
   fi
 elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
     supportedver=true
+    return
   else
     supportedver=false
+    return
   fi
 elif [[ ${distro} = "Ubuntu" ]]; then
   if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]] || [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
     supportedver=true
+    return
   else
     supportedver=false
+    return
   fi
-else
-  supportedver=false
 fi
 } #}}}
 
 get_arch() { #{{{
 architecture=$(uname -m)
-  if [[ ${architecture} = "x86_64" ]]; then
-    host64=true
-  elif [[ ${architecture} = i*86 ]]; then
-    host64=false
-  fi
-} #}}}
-
-validate_arch() { #{{{
-if [[ ${architecture} = "x86_64" ]] || [[ ${architecture} = i*86 ]]; then
-  case ${distro} in
-    Redhat | CentOS | Oracle)
-      if [[ ${majversion} = 5 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 5 && ${architecture} = i*86 ]]; then
-        supportedarch=true
-      elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
-        supportedarch=true
-      elif [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
-        supportedarch=true
-      else
-        supportedarch=false
-      fi
-    ;;
-    Debian | debian)
-      if [[ ${supportedver} = true ]]; then
-        supportedarch=true
-      else
-        supportedarch=false
-      fi
-      ;;
-    SLES | openSUSE)
-      if [[ ${supportedver} = true ]]; then
-        supportedarch=true
-      else
-        supportedarch=false
-      fi
-    ;;
-    Ubuntu)
-      if [[ ${majversion} = 14 && ${architecture} = "x86_64" ]]; then
-        supportedarch=true
-      elif [[ ${majversion} = 16 && ${architecture} = "x86_64" ]]; then
-        supportedarch=true
-      elif [[ ${majversion} = 18 && ${architecture} = "x86_64" ]]; then
-        supportedarch=true
-      elif [[ ${majversion} = 10 && ${architecture} = "x86_64" ]] || [[ ${majversion} = 10 && ${architecture} = i*86 ]]; then
-        supportedarch=true
-      else
-        supportedarch=false
-      fi
-      ;;
-    *)
-      if [[ ${architecture} = "x86_64" ]] || [[ ${architecture} = i*86 ]]; then
-        supportedarch=true
-      else
-        supportedarch=false
-      fi
-      ;;
-  esac
+if [[ ${architecture} = "x86_64" ]]; then
+  host64=true
+elif [[ ${architecture} = i*86 ]]; then
+  host64=false
 else
   echo -e "${f_red}This script is only for Intel/AMD x86 type architecture"
   echo -e "Script found ${architecture}, which is not supported.${reset}"
@@ -230,76 +202,182 @@ else
 fi
 } #}}}
 
+validate_arch() { #{{{
+case ${distro} in
+  Redhat | CentOS | Oracle)
+    if [[ ${majversion} = 5 && ${host64} = "true" ]] || [[ ${majversion} = 5 && ${host64} = "false" ]]; then
+      supportedarch=true
+    elif [[ ${majversion} = 6 && ${host64} = "true" ]] || [[ ${majversion} = 6 && ${host64} = "false" ]]; then
+      supportedarch=true
+    elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
+      supportedarch=true
+    else
+      supportedarch=false
+    fi
+  ;;
+  Debian | debian)
+    if [[ ${supportedver} = true ]]; then
+      supportedarch=true
+    else
+      supportedarch=false
+    fi
+    ;;
+  SLES | openSUSE)
+    if [[ ${supportedver} = true ]]; then
+      supportedarch=true
+    else
+      supportedarch=false
+    fi
+  ;;
+  Ubuntu)
+    if [[ ${majversion} = 14 && ${host64} = "true" ]]; then
+      supportedarch=true
+    elif [[ ${majversion} = 16 && ${host64} = "true" ]]; then
+      supportedarch=true
+    elif [[ ${majversion} = 18 && ${host64} = "true" ]]; then
+      supportedarch=true
+    elif [[ ${majversion} = 10 && ${host64} = "true" ]] || [[ ${majversion} = 10 && ${host64} = "false" ]]; then
+      supportedarch=true
+    else
+      supportedarch=false
+    fi
+    ;;
+  *)
+    if [[ ${host64} = "true" ]] || [[ ${host64} = "false" ]]; then
+      supportedarch=true
+    else
+      supportedarch=false
+    fi
+    ;;
+esac
+} #}}}
+
 select_package() { #{{{
 if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]]; then
   case $distro in
   Redhat | CentOS)
-    if [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+    if [[ ${majversion} = 7 && ${host64} = "true" ]]; then
       installpkg=${rhel7_64}
-    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 6 && ${host64} = "true" ]]; then
       installpkg=${rhel6_64}
-    elif [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = 6 && ${host64} = "false" ]]; then
       installpkg=${rhel6_32}
-    elif [[ ${majversion} = 5 && ${architecture} = "x86_64" ]];then
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = 5 && ${host64} = "true" ]];then
       installpkg=${rhel5_64}
-    else [[ ${majversion} = 5 && ${architecture} = i*86 ]]
+      installmethod="svc"
+      clientname="TaniumClient"
+    else [[ ${majversion} = 5 && ${host64} = "false" ]]
       installpkg=${rhel5_32}
+      installmethod="svc"
+      clientname="TaniumClient"
     fi
   ;;
   Oracle)
-    if [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+    if [[ ${majversion} = 7 && ${host64} = "true" ]]; then
       installpkg=${oracle7_64}
-    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 6 && ${host64} = "true" ]]; then
       installpkg=${oracle6_64}
-    elif [[ ${majversion} = 6 && ${architecture} = i*86 ]]; then
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = 6 && ${host64} = "false" ]]; then
       installpkg=${oracle6_32}
-    elif [[ ${majversion} = 5 && ${architecture} = "x86_64" ]];then
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = 5 && ${host64} = "true" ]];then
       installpkg=${oracle5_64}
-    else [[ ${majversion} = 5 && ${architecture} = i*86 ]]
+      installmethod="svc"
+      clientname="TaniumClient"
+    else [[ ${majversion} = 5 && ${host64} = "false" ]]
       installpkg=${oracle5_32}
+      installmethod="svc"
+      clientname="TaniumClient"
     fi
   ;;
   SLES | openSUSE)
-    if [[ ${majversion} = 12 && ${architecture} = "x86_64" ]]; then
+    if [[ ${majversion} = 12 && ${host64} = "true" ]]; then
       installpkg=${suse12_64}
-    elif [[ ${majversion} = 12 && ${architecture} = i*86 ]]; then
+      clientname="taniumclient"
+      installmethod="systemd"
+    elif [[ ${majversion} = 12 && ${host64} = "false" ]]; then
       installpkg=${suse12_32}
-    elif [[ ${majversion} = 11 && ${architecture} = "x86_64" ]]; then
+      clientname="taniumclient"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 11 && ${host64} = "true" ]]; then
       installpkg=${suse11_64}
-    else [[ ${majversion} = 11 && ${architecture} = i*86 ]]
+      clientname="taniumclient"
+      installmethod="svc"
+    else [[ ${majversion} = 11 && ${host64} = "false" ]]
       installpkg=${suse11_32}
+      clientname="taniumclient"
+      installmethod="svc"
     fi
   ;;
   Debian | debian)
-    if [[ ${majversion} = 9 && ${architecture} = "x86_64" ]]; then
+    if [[ ${majversion} = 9 && ${host64} = "true" ]]; then
       installpkg=${debian9_64}
-    elif [[ ${majversion} = 9 && ${architecture} = i*86 ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 9 && ${host64} = "false" ]]; then
       installpkg=${debian9_32}
-    elif [[ ${majversion} = 8 && ${architecture} = "x86_64" ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 8 && ${host64} = "true" ]]; then
       installpkg=${debian8_64}
-    elif [[ ${majversion} = 8 && ${architecture} = i*86 ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 8 && ${host64} = "false" ]]; then
       installpkg=${debian8_32}
-    elif [[ ${majversion} = 7 && ${architecture} = "x86_64" ]]; then
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
       installpkg=${debian67_64}
-    elif [[ ${majversion} = 7 && ${architecture} = i*86 ]]; then
+      installmethod="svc"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 7 && ${host64} = "false" ]]; then
       installpkg=${debian67_32}
-    elif [[ ${majversion} = 6 && ${architecture} = "x86_64" ]]; then
+      installmethod="svc"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 6 && ${host64} = "true" ]]; then
       installpkg=${debian67_64}
-    else [[ ${majversion} = 6 && ${architecture} = i*86 ]]
+      installmethod="svc"
+      clientname="taniumclient"
+    else [[ ${majversion} = 6 && ${host64} = "false" ]]
       installpkg=${debian67_32}
+      installmethod="svc"
+      clientname="taniumclient"
     fi
   ;;
   Ubuntu)
     if [[ ${majversion} = 18 ]]; then
       installpkg=${ubuntu18_64}
+      installmethod="systemd"
+      clientname="taniumclient"
     elif [[ ${majversion} = 16 ]]; then
       installpkg=${ubuntu16_64}
+      installmethod="systemd"
+      clientname="taniumclient"
     elif [[ ${majversion} = 14 ]]; then
       installpkg=${ubuntu14_64}
-    elif [[ ${majversion} = 10 && ${architecture} = "x86_64" ]]; then
+      installmethod="svc"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 10 && ${host64} = "true" ]]; then
       installpkg=${ubuntu10_64}
-    else [[ ${majversion} = 10 && ${architecture} = i*86 ]]
+      installmethod="svc"
+      clientname="taniumclient"
+      taniumini="true"
+    else [[ ${majversion} = 10 && ${host64} = "false" ]]
       installpkg=${ubuntu10_32}
+      installmethod="svc"
+      clientname="taniumclient"
+      taniumini="true"
     fi
   ;;
 esac
@@ -438,79 +516,79 @@ echo -e " 10 - DNR\n"
 echo -n "Please enter agency number and press [ENTER]: "
 read response
 case ${response} in
- 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 19)
-   serverip=${publicserverip}
-   ;;
- 18)
-   serverip=${oitserverip}
-   ;;
- *)
-   echo -e "${f_red}That is not a valid agency number, exiting.${reset}"
-   exit 1
-   ;;
+  1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 19)
+    serverip=${publicserverip}
+  ;;
+  18)
+    serverip=${oitserverip}
+  ;;
+  *)
+    echo -e "${f_red}That is not a valid agency number, exiting.${reset}"
+    exit 1
+  ;;
 esac
 
-if [ ${response} -eq 1 ]
- then agency="CDA"
-elif [ ${response} -eq 2 ]
- then agency="CDHS"
-elif [ ${response} -eq 3 ]
- then agency="CDLE"
-elif [ ${response} -eq 4 ]
- then agency="CDOT"
-elif [ ${response} -eq 5 ]
- then agency="CDPHE"
-elif [ ${response} -eq 6 ]
- then agency="CDPS"
-elif [ ${response} -eq 7 ]
- then agency="CHS"
-elif [ ${response} -eq 8 ]
- then agency="CST"
-elif [ ${response} -eq 9 ]
- then agency="DMVA"
-elif [ ${response} -eq 10 ]
- then agency="DNR"
-elif [ ${response} -eq 11 ]
- then agency="DOC"
-elif [ ${response} -eq 12 ]
- then agency="DOLA"
-elif [ ${response} -eq 13 ]
- then agency="DOR"
-elif [ ${response} -eq 14 ]
- then agency="DORA"
-elif [ ${response} -eq 15 ]
- then agency="DPA"
-elif [ ${response} -eq 16 ]
- then agency="GOV"
-elif [ ${response} -eq 17 ]
- then agency="HCPF"
-elif [ ${response} -eq 18 ]
- then agency="OIT"
-elif [ ${response} -eq 19 ]
- then agency="OITEDIT"
+if [ ${response} -eq 1 ]; then
+  agency="CDA"
+elif [ ${response} -eq 2 ]; then
+  agency="CDHS"
+elif [ ${response} -eq 3 ]; then
+  agency="CDLE"
+elif [ ${response} -eq 4 ]; then
+  agency="CDOT"
+elif [ ${response} -eq 5 ]; then
+  agency="CDPHE"
+elif [ ${response} -eq 6 ]; then
+  agency="CDPS"
+elif [ ${response} -eq 7 ]; then
+  agency="CHS"
+elif [ ${response} -eq 8 ]; then
+  agency="CST"
+elif [ ${response} -eq 9 ]; then
+  agency="DMVA"
+elif [ ${response} -eq 10 ]; then
+  agency="DNR"
+elif [ ${response} -eq 11 ]; then
+  agency="DOC"
+elif [ ${response} -eq 12 ]; then
+  agency="DOLA"
+elif [ ${response} -eq 13 ]; then
+  agency="DOR"
+elif [ ${response} -eq 14 ]; then
+  agency="DORA"
+elif [ ${response} -eq 15 ]; then
+  agency="DPA"
+elif [ ${response} -eq 16 ]; then
+  agency="GOV"
+elif [ ${response} -eq 17 ]; then
+  agency="HCPF"
+elif [ ${response} -eq 18 ]; then
+  agency="OIT"
+elif [ ${response} -eq 19 ]; then
+  agency="OITEDIT"
 fi
 } #}}}
 
 install_package() { #{{{
 case ${distro} in
- Redhat | CentOS | Oracle | SLES | openSUSE)
-  echo -e "Installing Tanium client for ${distro}, version ${majversion}"
-  rpm -ivh ${installpkg}
-  sleep 5
-;;
- Debian | debian | Ubuntu)
-  echo -e "Installing Tanium client for ${distro}, version ${majversion}"
-  dpkg -i ${installpkg}
-  sleep 5
-;;
- *)
-  echo -e "${f_red}Unrecognized distro, exiting. ${distro}${reset}"
-  exit 1
-;;
+  Redhat | CentOS | Oracle | SLES | openSUSE)
+    echo -e "Installing Tanium client for ${distro}, version ${majversion}"
+    rpm -ih ${installpkg}
+  ;;
+  Debian | debian | Ubuntu)
+    echo -e "Installing Tanium client for ${distro}, version ${majversion}"
+    dpkg -i ${installpkg}
+  ;;
+  *)
+    echo -e "${f_red}Unrecognized distro, exiting. ${distro}${reset}"
+    exit 1
+  ;;
 esac
 } # }}}
 
 configure_tanium() { #{{{
+echo -e "\n"
+echo -e "This script will now configure the required settings and start the service"
 if [[ ${pub_exists} = "true" ]]; then
   echo -e "Installing pub file: ${f_green}${taniumpub}${reset}"
   cp ${taniumpub} /opt/Tanium/TaniumClient/
@@ -518,86 +596,64 @@ elif [[ ${pub_exists} = "false" ]]; then
   echo -e "${f_red}Tanium public key not found, exiting.${reset}"
   exit 1
 fi
-echo -e "Setting Tanium parameters:"
-echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
-/opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${serverip}
-echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
-/opt/Tanium/TaniumClient/TaniumClient config set taniumport ${taniumport}
-echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
-/opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${verbosity}
+if [[ ${taniumini} = "true" ]]; then
+  taniumver=$(ls ${installpkg} | cut -d '_' -f 2 | cut -d '-' -f 1)
+  echo "Version=${taniumver}" > /opt/Tanium/TaniumClient/TaniumClient.ini
+  echo -e "Setting Tanium parameters:"
+  echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
+  echo "ServerName=${serverip}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+  echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
+  echo "ServerPort=${taniumport}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+  echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
+  echo "LogVerbosityLevel=${verbosity}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+else
+  echo -e "Setting Tanium parameters:"
+  echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
+  /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${serverip}
+  echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
+  /opt/Tanium/TaniumClient/TaniumClient config set taniumport ${taniumport}
+  echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
+  /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${verbosity}
+fi
 echo -e "Setting Agency custom tag to: ${f_green}${agency}${reset}"
-if [ -d /opt/Tanium/TaniumClient/Tools ]
- then
+if [ -d /opt/Tanium/TaniumClient/Tools ]; then
   echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
- else
+else
   mkdir /opt/Tanium/TaniumClient/Tools
   echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
 fi
 } #}}}
 
 start_services() { #{{{
-case ${distro} in
- Redhat | CentOS | Oracle)
-  if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]]; then
-   echo -e "Starting Tanium service"
-   service TaniumClient start
-   chkconfig --level 2345 TaniumClient on
-  elif [[ ${majversion} = "7" ]]; then
-   echo -e "Starting Tanium service"
-    systemctl start taniumclient
-    systemctl enable taniumclient
-  fi
- ;;
- SUSE | openSUSE)
-  echo -e "Starting Tanium service"
-  service TaniumClient start
-  chkconfig --level 2345 TaniumClient on
- ;;
- Debian | debian)
-  if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
-   echo -e "Starting Tanium service"
-   service TaniumClient start
-   chkconfig --level 2345 TaniumClient on
-  elif [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
-   echo -e "Starting Tanium Service"
-   systemctl start taniumclient
-   systemctl enable taniumclient
-  fi
- ;;
- Ubuntu)
-  if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]]; then
-   echo -e "Starting Tanium service"
-   service TaniumClient start
-   chkconfig --level 2345 TaniumClient on
-  elif [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
-   echo -e "Starting Tanium Service"
-   systemctl start taniumclient
-   systemctl enable taniumclient
-  fi
- ;;
-esac
+if [[ ${installmethod} = "svc" ]]; then
+    echo -e "Starting Tanium service"
+    service "${clientname}" start
+elif [[ ${installmethod} = "systemd" ]]; then
+    echo -e "Starting Tanium service"
+    systemctl start "${clientname}"
+fi
 } #}}}
 
 final_message() { #{{{
-echo -e "${F_GREEN}Install Complete${RESET}"
-echo -e "${F_RED}Please verify that firewall port ${SERVERPORT}/TCP is open to ${SERVERIP}${RESET}"
+echo -e "${f_green}Install Complete${reset}"
+echo -e "Please verify that firewall port ${taniumport}/TCP is open to ${serverip}"
 exit 0
 } #}}}
 
 # BEGIN PROCESSING
-# check_root
+check_root
 get_distro
 get_distroversion
 validate_distroversion
 get_arch
 validate_arch
-# get_domain - UNUSED FOR NOW
+# get_domain # UNUSED FOR NOW
 select_package
 validate_package
 show_banner
 prompt_agency
-# install_package
-# configure_tanium
-# start_services
-# final_message
+install_package
+configure_tanium
+start_services
+final_message
 exit 0
