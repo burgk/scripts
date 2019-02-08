@@ -3,9 +3,11 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definions #{{{
-oitserverip=10.51.2.112
+# oitserverip=10.51.2.112
+oitserverip=10.51.50.101
 publicserverip=165.127.219.171
 taniumport=17472
+taniumport2=17444
 verbosity=0
 # Console colors
 f_red="\e[38;2;255;0;0m"
@@ -635,8 +637,9 @@ fi
 } #}}}
 
 final_message() { #{{{
-echo -e "${f_green}Install Complete${reset}"
-echo -e "Please verify that firewall port ${taniumport}/TCP is open to ${serverip}"
+echo -e "${f_green}Installation Complete${reset}"
+echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP"
+echo -e "are open to ${serverip}"
 exit 0
 } #}}}
 
