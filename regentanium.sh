@@ -58,7 +58,7 @@ echo -e "All \t\t AWS"
 echo -e "Debian \t\t Oracle"
 echo -e "RHEL \t\t SUSE"
 echo -e "Ubuntu"
-echo -n "Package to rebuild: "
+echo -n "Package to rebuild (you probably want All): "
 read -r response
 case ${response} in
   All)
