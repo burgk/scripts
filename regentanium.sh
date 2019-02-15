@@ -61,37 +61,38 @@ echo -e "Ubuntu"
 echo -n "Package to rebuild (you probably want All): "
 read -r response
 case ${response} in
-  All)
+  All | all)
   declare -a all_distros=("AWS" "Debian" "Oracle" "SUSE" "RHEL" "Ubuntu")
   for distro in "${all_distros[@]}"; do
     rebuild_package "${distro}"
   done
   ;;
-  AWS)
+  AWS | aws)
   distro="AWS"
   rebuild_package "${response}"
   ;;
-  Debian)
+  Debian | debian)
   distro="Debian"
   rebuild_package "${response}"
   ;;
-  Oracle)
+  Oracle | oracle)
   distro="Oracle"
   rebuild_package "${response}"
   ;;
-  SUSE)
+  SUSE | suse)
   distro="SUSE"
   rebuild_package "${response}"
   ;;
-  RHEL)
+  RHEL | rhel)
   distro="RHEL"
   rebuild_package "${response}"
   ;;
-  Ubuntu)
+  Ubuntu | ubuntu)
   distro="Ubuntu"
   rebuild_package "${response}"
   ;;
   *)
+  echo -e "Does -> ${response} <- look like one of those options??"
   echo -e "Invalid entry, exiting"
   exit 1
   ;;
