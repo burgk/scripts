@@ -4,11 +4,11 @@
 
 # Misc variable definions #{{{
 # oitserverip=10.51.2.112
-oitserverip=10.51.50.101
-publicserverip=165.127.219.171
-taniumport=17472
-taniumport2=17444
-verbosity=0
+oitserverip="10.51.50.101"
+publicserverip="165.127.219.171"
+taniumport="17472"
+taniumport2="17444"
+verbosity="0"
 # Console colors
 f_red="\e[38;2;255;0;0m"
 f_green="\e[38;2;0;255;0m"
@@ -40,6 +40,8 @@ ubuntu10_64="./taniumclient_6.0.314.1579-ubuntu10_amd64.deb"
 ubuntu14_64="./taniumclient_7.2.314.3476-ubuntu14_amd64.deb"
 ubuntu16_64="./taniumclient_7.2.314.3476-ubuntu16_amd64.deb"
 ubuntu18_64="./taniumclient_7.2.314.3476-ubuntu18_amd64.deb"
+aws2_64="./TaniumClient-7.2.314.3476-1.amzn2.x86_64.rpm"
+aws2018_64="./TaniumClient-7.2.314.3476-1.amzn2018.03.x86_64.rpm"
 #}}}
 
 check_root() { #{{{
@@ -53,7 +55,7 @@ if (( ${EUID} != 0 )); then
 get_distro() { #{{{
 operatingsystem=$(uname -o)
 if [[ ${operatingsystem} != *inux* ]]; then
-  echo -e "${f_red}This script is only designed to work with Linux hosts"
+  echo -e "${f_red}In function get_distro: This script is only designed to work with Linux hosts"
   echo -e "It found ${operatingsystem} instead and cannot continue.${reset}"
   exit 1
 fi
@@ -61,56 +63,56 @@ fi
 if [[ -e /etc/os-release ]]; then # Should get most supported systems
   distro=$(grep ^NAME /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"')
   case ${distro} in
-  CentOS | Oracle | SLES | openSUSE | Debian | debian | Ubuntu)
-    supported_distro=true
+  CentOS | Oracle | SLES | openSUSE | Debian | debian | Ubuntu | Amazon)
+    supported_distro="true"
     return
   ;;
   Red)
     distro="Redhat"
-    supported_distro=true
+    supported_distro="true"
     return
   ;;
   *)
-    supported_distro=false
+    supported_distro="false"
     return
   ;;
   esac
 elif [[ -e /etc/oracle-release ]]; then # Get old Oracle
-  distro=Oracle
-  supported_distro=true
+  distro="Oracle"
+  supported_distro="true"
   return
 elif [[ -e /etc/centos-release ]]; then # Get old CentOS
-  distro=CentOS
-  supported_distro=true
+  distro="CentOS"
+  supported_distro="true"
   return
 elif [[ -e /etc/redhat-release ]]; then # Get old Redhat
   distro="Redhat"
-  supported_distro=true
+  supported_distro="true"
   return
 elif [[ -e /etc/lsb-release ]]; then # Gets old Ubuntu
   distro=$(grep DISTRIB_ID /etc/lsb-release | awk -F'=' '{print $2}' | tr -d '"')
   if [[ ${distro} = *buntu* ]]; then
-    supported_distro=true
+    supported_distro="true"
     return
   else
-    supported_distro=false
+    supported_distro="false"
     return
   fi
 elif [[ -e /etc/SuSE-release ]]; then # Gets old openSuse
   distro=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $1}')
   if [[ ${distro} = "openSUSE" ]]; then
-    supported_distro=true
+    supported_distro="true"
     return
   else
-    supported_distro=false
+    supported_distro="false"
     return
   fi
 elif [[ -e /etc/debian_version ]]; then # Gets old Debian
-  distro=Debian
-  supported_distro=true
+  distro="Debian"
+  supported_distro="true"
   return
 else # Unsupported distro
-  echo -e "${f_red}Unable to determine Linux distribution, exiting${reset}"
+  echo -e "${f_red}In function get_distro: Unable to determine Linux distribution, exiting${reset}"
   exit 1
 fi
 } #}}}
@@ -152,53 +154,64 @@ case ${distro} in
   Ubuntu)
     majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{print $2}' | awk -F'.' '{print $1}')
   ;;
+  Amazon)
+    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | tr -d '"' | awk -F'.' '{print $1}')
+  ;;
 esac
 } #}}}
 
 validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then
   if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
-    supportedver=true
+    supportedver="true"
     return
   else
-    supportedver=false
+    supportedver="false"
     return
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
-    supportedver=true
+    supportedver="true"
     return
   else
-    supportedver=false
+    supportedver="false"
     return
   fi
 elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
-    supportedver=true
+    supportedver="true"
     return
   else
-    supportedver=false
+    supportedver="false"
     return
   fi
 elif [[ ${distro} = "Ubuntu" ]]; then
   if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]] || [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
-    supportedver=true
-    return
-  else
-    supportedver=false
+    supportedver="true"
     return
   fi
+elif [[ ${distro} = "Amazon" ]]; then
+  if [[ ${majversion} = "2" ]] || [[ ${majversion} = "2018" ]]; then
+    supportedver="true"
+    return
+  else
+    supportedver="false"
+    return
+  fi
+else
+  supportedver="false"
+  return
 fi
 } #}}}
 
 get_arch() { #{{{
 architecture=$(uname -m)
 if [[ ${architecture} = "x86_64" ]]; then
-  host64=true
+  host64="true"
 elif [[ ${architecture} = i*86 ]]; then
-  host64=false
+  host64="false"
 else
-  echo -e "${f_red}This script is only for Intel/AMD x86 type architecture"
+  echo -e "${f_red}In function get_arch: This script is only for Intel/AMD x86 type architecture"
   echo -e "Script found ${architecture}, which is not supported.${reset}"
   exit 1
 fi
@@ -208,47 +221,56 @@ validate_arch() { #{{{
 case ${distro} in
   Redhat | CentOS | Oracle)
     if [[ ${majversion} = 5 && ${host64} = "true" ]] || [[ ${majversion} = 5 && ${host64} = "false" ]]; then
-      supportedarch=true
+      supportedarch="true"
     elif [[ ${majversion} = 6 && ${host64} = "true" ]] || [[ ${majversion} = 6 && ${host64} = "false" ]]; then
-      supportedarch=true
+      supportedarch="true"
     elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
-      supportedarch=true
+      supportedarch="true"
     else
-      supportedarch=false
+      supportedarch="false"
     fi
   ;;
   Debian | debian)
-    if [[ ${supportedver} = true ]]; then
-      supportedarch=true
+    if [[ ${supportedver} = "true" ]]; then
+      supportedarch="true"
     else
-      supportedarch=false
+      supportedarch="false"
     fi
     ;;
   SLES | openSUSE)
-    if [[ ${supportedver} = true ]]; then
-      supportedarch=true
+    if [[ ${supportedver} = "true" ]]; then
+      supportedarch="true"
     else
-      supportedarch=false
+      supportedarch="false"
     fi
   ;;
   Ubuntu)
     if [[ ${majversion} = 14 && ${host64} = "true" ]]; then
-      supportedarch=true
+      supportedarch="true"
     elif [[ ${majversion} = 16 && ${host64} = "true" ]]; then
-      supportedarch=true
+      supportedarch="true"
     elif [[ ${majversion} = 18 && ${host64} = "true" ]]; then
-      supportedarch=true
+      supportedarch="true"
     elif [[ ${majversion} = 10 && ${host64} = "true" ]] || [[ ${majversion} = 10 && ${host64} = "false" ]]; then
-      supportedarch=true
+      supportedarch="true"
     else
-      supportedarch=false
+      supportedarch="false"
+    fi
+    ;;
+  Amazon)
+    if [[ ${majversion} = "2" && ${host64} = "true" ]]; then
+      supportedarch="true"
+    elif [[ ${majversion} = "2018" && ${host64} = "true" ]]; then
+      supportedarch="true"
+    else
+      supportedarch="false"
     fi
     ;;
   *)
     if [[ ${host64} = "true" ]] || [[ ${host64} = "false" ]]; then
-      supportedarch=true
+      supportedarch="true"
     else
-      supportedarch=false
+      supportedarch="false"
     fi
     ;;
 esac
@@ -382,91 +404,37 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
       taniumini="true"
     fi
   ;;
+  Amazon)
+    if [[ ${majversion} = "2" && ${host64} = "true" ]]; then
+      installpkg=${aws2_64}
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = "2018" && ${host64} = "true" ]]; then
+      installpkg=${aws2018_64}
+      installmethod="svc"
+      clientname="TaniumClient"
+    fi
+    ;;
 esac
 else
-  echo -e "${f_red}Not a supported configuration, exiting${reset}"
+  echo -e "${f_red}In function select_package: Not a supported configuration, exiting${reset}"
   exit 1
 fi
 } #}}}
 
 validate_package(){ #{{{
-installer=$0
-case ${installer} in
-  ./InstallTaniumRHEL.sh)
-    if [[ -e ${installpkg} ]]; then
-      pkg_exists=true
-    else
-      echo -e "${f_red}Install package ${installpkg} not found in directory, exiting${reset}"
-      exit 1
-    fi
-    if [[ -e ${taniumpub} ]]; then
-      pub_exists=true
-    else
-      echo -e "${f_red}Install pub ${taniumpub} not found in directory, exiting${reset}"
-      exit 1
-    fi
-  ;;
-  ./InstallTaniumOracle.sh)
-    if [[ -e ${installpkg} ]]; then
-      pkg_exists=true
-    else
-      echo -e "${f_red}Install package ${installpkg} not found in directory, exiting${reset}"
-      exit 1
-    fi
-    if [[ -e ${taniumpub} ]]; then
-      pub_exists=true
-    else
-      echo -e "${f_red}Install pub ${taniumpub} not found in directory, exiting${reset}"
-      exit 1
-    fi
-  ;;
-  ./InstallTaniumSUSE.sh)
-    if [[ -e ${installpkg} ]]; then
-      pkg_exists=true
-    else
-      echo -e "${f_red}Install package ${installpkg} not found in directory, exiting${reset}"
-      exit 1
-    fi
-    if [[ -e ${taniumpub} ]]; then
-      pub_exists=true
-    else
-      echo -e "${f_red}Install pub ${taniumpub} not found in directory, exiting${reset}"
-      exit 1
-    fi
-  ;;
-  ./InstallTaniumDebian.sh)
-    if [[ -e ${installpkg} ]]; then
-      pkg_exists=true
-    else
-      echo -e "${f_red}Install package ${installpkg} not found in directory, exiting${reset}"
-      exit 1
-    fi
-    if [[ -e ${taniumpub} ]]; then
-      pub_exists=true
-    else
-      echo -e "${f_red}Install pub ${taniumpub} not found in directory, exiting${reset}"
-      exit 1
-    fi
-  ;;
-  ./InstallTaniumUbuntu.sh)
-    if [[ -e ${installpkg} ]]; then
-      pkg_exists=true
-    else
-      echo -e "${f_red}Install package ${installpkg} not found in directory, exiting${reset}"
-      exit 1
-    fi
-    if [[ -e ${taniumpub} ]]; then
-      pub_exists=true
-    else
-      echo -e "${f_red}Install pub ${taniumpub} not found in directory, exiting${reset}"
-      exit 1
-    fi
-  ;;
-  * )
-    echo -e "${f_red}Unrecognized install script ${installer}, exiting${reset}"
-    exit 1
-esac
-
+if [[ -e ${installpkg} ]]; then
+  pkg_exists="true"
+else
+  echo -e "${f_red}In function validate_package: Install package ${installpkg} not found in directory, exiting${reset}"
+  exit 1
+fi
+if [[ -e ${taniumpub} ]]; then
+  pub_exists="true"
+else
+  echo -e "${f_red}In function validate_package: Install pub ${taniumpub} not found in directory, exiting${reset}"
+  exit 1
+fi
 } #}}}
 
 get_domain() { #{{{
@@ -474,49 +442,84 @@ tmpdomain=$(hostname -d | awk -F'.' '{print $1}')
 if [[ -z ${tmpdomain} ]]; then
   domain=${tmpdomain^^} # not supported in bash < 4
 else
-  domain=Unconfigured
+  domain="Unconfigured"
 fi 
 } #}}}
 
+get_args() { #{{{
+  silentinstall="true"
+  timestamp=$(date +%F-%T)
+  touch "./install-tanium-${timestamp}.log"
+  logfile="./install-tanium-${timestamp}.log"
+  case $1 in
+  1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
+    cliarg=$1
+    ;;
+  *)
+    echo -e "${f_red}In function get_args: Not a valid agency, exiting.${reset}" >> "${logfile}"
+    exit 1
+    ;;
+  esac
+} #}}}
+
 show_banner() { #{{{
-echo -e "${f_green}\n"
-echo -e '      _________    _   ________  ____  ___'
-echo -e '     /_  __/   |  / | / /  _/ / / /  |/  /'
-echo -e '      / / / /| | /  |/ // // / / / /|_/ /'
-echo -e '     / / / ___ |/ /|  // // /_/ / /  / /'
-echo -e '    /_/ /_/  |_/_/ |_/___/\____/_/  /_/'
-echo -e "${reset}\n"
-if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]] && [[ ${pkg_exists} = "true" ]] && [[ ${pub_exists} = "true" ]]; then
-  echo -e "Found distribution: ${distro}"
-  echo -e "Supported distro: ${supported_distro}"
-  echo -e "Found version: ${majversion}"
-  echo -e "Supported version: ${supportedver}"
-  echo -e "Found architecture: ${architecture}"
-  echo -e "Supported architecture: ${supportedarch}"
-  echo -e "Found install package: ${installpkg}"
-  echo -e "Found Tanium key file: ${taniumpub}"
-# echo -e "Suggest agency is ${domain}"
-  echo -e "${f_green}This is a supported configuration, continuing...${reset}\n"
+if [[ ${silentinstall} = "true" ]]; then
+  if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]] && [[ ${pkg_exists} = "true" ]] && [[ ${pub_exists} = "true" ]]; then
+    echo -e "Found distribution: ${distro}" >> "${logfile}"
+    echo -e "Supported distro: ${supported_distro}" >> "${logfile}"
+    echo -e "Found version: ${majversion}" >> "${logfile}"
+    echo -e "Supported version: ${supportedver}" >> "${logfile}"
+    echo -e "Found architecture: ${architecture}" >> "${logfile}"
+    echo -e "Supported architecture: ${supportedarch}" >> "${logfile}"
+    echo -e "Found install package: ${installpkg}" >> "${logfile}"
+    echo -e "Found Tanium key file: ${taniumpub}" >> "${logfile}"
+  else
+    echo -e "In function show_banner: This is not a supported configuration, exiting." >> "${logfile}"
+    exit 1
+  fi
 else
-  echo -e "${f_red}This is NOT a supported configuration, exiting.${reset}"
-  exit 1
+  echo -e "${f_green}\n"
+  echo -e '      _________    _   ________  ____  ___'
+  echo -e '     /_  __/   |  / | / /  _/ / / /  |/  /'
+  echo -e '      / / / /| | /  |/ // // / / / /|_/ /'
+  echo -e '     / / / ___ |/ /|  // // /_/ / /  / /'
+  echo -e '    /_/ /_/  |_/_/ |_/___/\____/_/  /_/'
+  echo -e "${reset}\n"
+  if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]] && [[ ${pkg_exists} = "true" ]] && [[ ${pub_exists} = "true" ]]; then
+    echo -e "Found distribution: ${distro}"
+    echo -e "Supported distro: ${supported_distro}"
+    echo -e "Found version: ${majversion}"
+    echo -e "Supported version: ${supportedver}"
+    echo -e "Found architecture: ${architecture}"
+    echo -e "Supported architecture: ${supportedarch}"
+    echo -e "Found install package: ${installpkg}"
+    echo -e "Found Tanium key file: ${taniumpub}"
+    echo -e "${f_green}This is a supported configuration, continuing...${reset}\n"
+  else
+    echo -e "${f_red}In function show_banner: This is NOT a supported configuration, exiting.${reset}"
+    exit 1
+  fi
 fi
 } #}}}
 
 prompt_agency() { #{{{
-echo -e "This script supports the following Agencies:"
-echo -e "  1 - CDA \t\t 11 - DOC"
-echo -e "  2 - CDHS \t\t 12 - DOLA"
-echo -e "  3 - CDLE \t\t 13 - DOR"
-echo -e "  4 - CDOT \t\t 14 - DORA"
-echo -e "  5 - CDPHE \t\t 15 - DPA"
-echo -e "  6 - CDPS \t\t 16 - GOV"
-echo -e "  7 - CHS \t\t 17 - HCPF"
-echo -e "  8 - CST \t\t 18 - OIT"
-echo -e "  9 - DMVA \t\t 19 - OITEDIT"
-echo -e " 10 - DNR\n"
-echo -n "Please enter agency number and press [ENTER]: "
-read response
+if [[ ${silentinstall} = "true" ]]; then
+  response=${cliarg}
+else
+  echo -e "This script supports the following Agencies:"
+  echo -e "  1 - CDA \t\t 11 - DOC"
+  echo -e "  2 - CDHS \t\t 12 - DOLA"
+  echo -e "  3 - CDLE \t\t 13 - DOR"
+  echo -e "  4 - CDOT \t\t 14 - DORA"
+  echo -e "  5 - CDPHE \t\t 15 - DPA"
+  echo -e "  6 - CDPS \t\t 16 - GOV"
+  echo -e "  7 - CHS \t\t 17 - HCPF"
+  echo -e "  8 - CST \t\t 18 - OIT"
+  echo -e "  9 - DMVA \t\t 19 - OITEDIT"
+  echo -e " 10 - DNR\n"
+  echo -n "Please enter agency number and press [ENTER]: "
+  read response
+fi
 case ${response} in
   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 19)
     serverip=${publicserverip}
@@ -525,7 +528,7 @@ case ${response} in
     serverip=${oitserverip}
   ;;
   *)
-    echo -e "${f_red}That is not a valid agency number, exiting.${reset}"
+    echo -e "${f_red}In function prompt_agency: That is not a valid agency number, exiting.${reset}"
     exit 1
   ;;
 esac
@@ -572,75 +575,153 @@ fi
 } #}}}
 
 install_package() { #{{{
-case ${distro} in
-  Redhat | CentOS | Oracle | SLES | openSUSE)
-    echo -e "Installing Tanium client for ${distro}, version ${majversion}"
-    rpm -ih ${installpkg}
-  ;;
-  Debian | debian | Ubuntu)
-    echo -e "Installing Tanium client for ${distro}, version ${majversion}"
-    dpkg -i ${installpkg}
-  ;;
-  *)
-    echo -e "${f_red}Unrecognized distro, exiting. ${distro}${reset}"
-    exit 1
-  ;;
-esac
+if [[ ${silentinstall} = "true" ]]; then
+  case ${distro} in
+    Redhat | CentOS | Oracle | SLES | openSUSE | Amazon)
+      echo -e "Installing Tanium client for ${distro}, version ${majversion}" >> "${logfile}"
+      rpm -ivh ${installpkg} 2>&1 >> "${logfile}"
+    ;;
+    Debian | debian | Ubuntu)
+      echo -e "Installing Tanium client for ${distro}, version ${majversion}" >> "${logfile}"
+      dpkg -i ${installpkg} 2>&1 >> "${logfile}"
+    ;;
+    *)
+      echo -e "${f_red}In function install_package: Unrecognized distro, exiting. ${distro}${reset}" >> "${logfile}"
+      exit 1
+    ;;
+  esac
+else
+  case ${distro} in
+    Redhat | CentOS | Oracle | SLES | openSUSE | Amazon)
+      echo -e "Installing Tanium client for ${distro}, version ${majversion}"
+      rpm -ivh ${installpkg}
+    ;;
+    Debian | debian | Ubuntu)
+      echo -e "Installing Tanium client for ${distro}, version ${majversion}"
+      dpkg -i ${installpkg}
+    ;;
+    *)
+      echo -e "${f_red}In function install_package: Unrecognized distro, exiting. ${distro}${reset}"
+      exit 1
+    ;;
+  esac
+fi
 } # }}}
 
 configure_tanium() { #{{{
-echo -e "\n"
-echo -e "This script will now configure the required settings and start the service"
-if [[ ${pub_exists} = "true" ]]; then
-  echo -e "Installing pub file: ${f_green}${taniumpub}${reset}"
-  cp ${taniumpub} /opt/Tanium/TaniumClient/
-elif [[ ${pub_exists} = "false" ]]; then
-  echo -e "${f_red}Tanium public key not found, exiting.${reset}"
-  exit 1
-fi
-if [[ ${taniumini} = "true" ]]; then
-  taniumver=$(ls ${installpkg} | cut -d '_' -f 2 | cut -d '-' -f 1)
-  echo "Version=${taniumver}" > /opt/Tanium/TaniumClient/TaniumClient.ini
-  echo -e "Setting Tanium parameters:"
-  echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
-  echo "ServerName=${serverip}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
-  echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
-  echo "ServerPort=${taniumport}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
-  echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
-  echo "LogVerbosityLevel=${verbosity}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+if [[ ${silentinstall} = "true" ]]; then
+  echo -e "This script will now configure the required settings and start the service" >> "${logfile}"
+  if [[ ${pub_exists} = "true" ]]; then
+    echo -e "Installing pub file: ${taniumpub}" >> "${logfile}"
+    cp ${taniumpub} /opt/Tanium/TaniumClient/
+  elif [[ ${pub_exists} = "false" ]]; then
+    echo -e "Tanium public key not found, exiting." >> "${logfile}"
+    exit 1
+  fi
+  if [[ ${taniumini} = "true" ]]; then
+    taniumver=$(ls ${installpkg} | cut -d '_' -f 2 | cut -d '-' -f 1)
+    echo "Version=${taniumver}" > /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "Setting Tanium parameters:" >> "${logfile}"
+    echo -e "  Tanium server IP: ${serverip}" >> "${logfile}"
+    echo "ServerName=${serverip}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "  Tanium server port: ${taniumport}" >> "${logfile}"
+    echo "ServerPort=${taniumport}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "  Tanium log verbosity level: ${verbosity}" >> "${logfile}"
+    echo "LogVerbosityLevel=${verbosity}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+  else
+    echo -e "Setting Tanium parameters:" >> "${logfile}"
+    echo -e "  Tanium server IP: ${serverip}" >> "${logfile}"
+    /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${serverip}
+    echo -e "  Tanium server port: ${taniumport}" >> "${logfile}"
+    /opt/Tanium/TaniumClient/TaniumClient config set taniumport ${taniumport}
+    echo -e "  Tanium log verbosity level: ${verbosity}" >> "${logfile}"
+    /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${verbosity}
+  fi
+  echo -e "Setting Agency custom tag to: ${agency}" >> "${logfile}"
+  if [ -d /opt/Tanium/TaniumClient/Tools ]; then
+    echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+  else
+    mkdir /opt/Tanium/TaniumClient/Tools
+    echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+  fi
 else
-  echo -e "Setting Tanium parameters:"
-  echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
-  /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${serverip}
-  echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
-  /opt/Tanium/TaniumClient/TaniumClient config set taniumport ${taniumport}
-  echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
-  /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${verbosity}
-fi
-echo -e "Setting Agency custom tag to: ${f_green}${agency}${reset}"
-if [ -d /opt/Tanium/TaniumClient/Tools ]; then
-  echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
-else
-  mkdir /opt/Tanium/TaniumClient/Tools
-  echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+  echo -e "\n"
+  echo -e "This script will now configure the required settings and start the service"
+  if [[ ${pub_exists} = "true" ]]; then
+    echo -e "Installing pub file: ${f_green}${taniumpub}${reset}"
+    cp ${taniumpub} /opt/Tanium/TaniumClient/
+  elif [[ ${pub_exists} = "false" ]]; then
+    echo -e "${f_red}In function configure_tanium: Tanium public key not found, exiting.${reset}"
+    exit 1
+  fi
+  if [[ ${taniumini} = "true" ]]; then
+    taniumver=$(ls ${installpkg} | cut -d '_' -f 2 | cut -d '-' -f 1)
+    echo "Version=${taniumver}" > /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "Setting Tanium parameters:"
+    echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
+    echo "ServerName=${serverip}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
+    echo "ServerPort=${taniumport}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+    echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
+    echo "LogVerbosityLevel=${verbosity}" >> /opt/Tanium/TaniumClient/TaniumClient.ini
+  else
+    echo -e "Setting Tanium parameters:"
+    echo -e "  Tanium server IP: ${f_green}${serverip}${reset}"
+    /opt/Tanium/TaniumClient/TaniumClient config set ServerNameList ${serverip}
+    echo -e "  Tanium server port: ${f_green}${taniumport}${reset}"
+    /opt/Tanium/TaniumClient/TaniumClient config set taniumport ${taniumport}
+    echo -e "  Tanium log verbosity level: ${f_green}${verbosity}${reset}"
+    /opt/Tanium/TaniumClient/TaniumClient config set LogVerbosityLevel ${verbosity}
+  fi
+  echo -e "Setting Agency custom tag to: ${f_green}${agency}${reset}"
+  if [ -d /opt/Tanium/TaniumClient/Tools ]; then
+    echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+  else
+    mkdir /opt/Tanium/TaniumClient/Tools
+    echo -e "~~${agency}" > /opt/Tanium/TaniumClient/Tools/CustomTags.txt
+  fi
 fi
 } #}}}
 
 start_services() { #{{{
-if [[ ${installmethod} = "svc" ]]; then
+if [[ ${silentinstall} = "true" ]]; then
+  if [[ ${installmethod} = "svc" ]]; then
+    echo -e "Starting Tanium service" >> "${logfile}"
+    service "${clientname}" start 2>&1 >> "${logfile}"
+  elif [[ ${installmethod} = "systemd" ]]; then
+    echo -e "Starting Tanium service" >> "${logfile}"
+    systemctl start "${clientname}" 2>&1 >> "${logfile}"
+  fi
+else
+  if [[ ${installmethod} = "svc" ]]; then
     echo -e "Starting Tanium service"
     service "${clientname}" start
-elif [[ ${installmethod} = "systemd" ]]; then
+  elif [[ ${installmethod} = "systemd" ]]; then
     echo -e "Starting Tanium service"
     systemctl start "${clientname}"
+  fi
 fi
 } #}}}
 
 final_message() { #{{{
-echo -e "${f_green}Installation Complete${reset}"
-echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP"
-echo -e "are open to ${serverip}"
-exit 0
+if [[ ${silentinstall} = "true" ]]; then
+  if [[ ${distro} = "Amazon" ]]; then
+    echo -e "Installation Complete" >> "${logfile}"
+    echo -e "Please verify that your AWS security group allows ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
+    echo -e "to ${serverip}" >> "${logfile}"
+    exit 0
+  else
+    echo -e "Installation Complete" >> "${logfile}"
+    echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
+    echo -e "are open to ${serverip}" >> "${logfile}"
+    exit 0
+  fi
+else
+  echo -e "${f_green}Installation Complete${reset}"
+  echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP"
+  echo -e "are open to ${serverip}"
+  exit 0
+fi
 } #}}}
 
 # BEGIN PROCESSING
@@ -653,10 +734,23 @@ validate_arch
 # get_domain # UNUSED FOR NOW
 select_package
 validate_package
-show_banner
-prompt_agency
-install_package
-configure_tanium
-start_services
-final_message
+if [[ "$#" -eq 0 ]]; then
+  show_banner
+  prompt_agency
+  install_package
+  configure_tanium
+  start_services
+  final_message
+elif [[ "$#" -eq 1 ]]; then
+  get_args "$1"
+  show_banner
+  prompt_agency
+  install_package
+  configure_tanium
+  start_services
+  final_message
+else
+  echo -e "${f_red}Unrecognized command line argument, exiting${reset}"
+  exit 1
+fi
 exit 0
