@@ -32,7 +32,7 @@ else
 fi
 
 if [[ "${installersum}" != "${distrosum}" ]]; then
-  echo -e "Checksum mismatch, installing new version of installer"
+  echo -e "Installer checksum mismatch, installing new version of installer"
   chmod 755 "./TaniumClient${distro}/InstallTanium${distro}.sh"
   cp "${installer}" "./TaniumClient${distro}/InstallTanium${distro}.sh"
   chmod 555 "./TaniumClient${distro}/InstallTanium${distro}.sh"
@@ -41,7 +41,7 @@ else
 fi
 
 if [[ "${readmesum}" != "${distroreadmesum}" ]]; then
-  echo -e "Checksum mismatch, installing new version of readme"
+  echo -e "Readme checksum mismatch, installing new version of readme"
   chmod 644 "./TaniumClient${distro}/README.txt"
   cp "${readme}" "./TaniumClient${distro}/README.txt"
   chmod 444 "./TaniumClient${distro}/README.txt"
