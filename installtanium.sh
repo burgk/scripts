@@ -168,24 +168,39 @@ if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "O
     supportedver="true"
     return
   else
-    supportedver="false"
-    return
+    echo -e "${f_red}"
+    echo -e "Error: In function validate_distroversion"
+    echo -e "Found distro: ${distro}" 
+    echo -e "Found major version: ${majversion}"
+    echo -e "This is not a supported combination, exiting."
+    echo -e "${reset}"
+    exit 1
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver="true"
     return
   else
-    supportedver="false"
-    return
+    echo -e "${f_red}"
+    echo -e "Error: In function validate_distroversion"
+    echo -e "Found distro: ${distro}" 
+    echo -e "Found major version: ${majversion}"
+    echo -e "This is not a supported combination, exiting."
+    echo -e "${reset}"
+    exit 1
   fi
 elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
     supportedver="true"
     return
   else
-    supportedver="false"
-    return
+    echo -e "${f_red}"
+    echo -e "Error: In function validate_distroversion"
+    echo -e "Found distro: ${distro}" 
+    echo -e "Found major version: ${majversion}"
+    echo -e "This is not a supported combination, exiting."
+    echo -e "${reset}"
+    exit 1
   fi
 elif [[ ${distro} = "Ubuntu" ]]; then
   if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]] || [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
@@ -197,8 +212,13 @@ elif [[ ${distro} = "Amazon" ]]; then
     supportedver="true"
     return
   else
-    supportedver="false"
-    return
+    echo -e "${f_red}"
+    echo -e "Error: In function validate_distroversion"
+    echo -e "Found distro: ${distro}" 
+    echo -e "Found major version: ${majversion}"
+    echo -e "This is not a supported combination, exiting."
+    echo -e "${reset}"
+    exit 1
   fi
 else
   supportedver="false"
@@ -431,7 +451,13 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
     ;;
 esac
 else
-  echo -e "${f_red}In function select_package: Not a supported configuration, exiting${reset}"
+  echo -e "${f_red}"
+  echo -e "Error: In function select_package"
+  echo -e "Found distro: ${distro}"
+  echo -e "Found major version: ${majversion}"
+  echo -e "Found architecture: ${architecture}"
+  echo -e "Not a supported configuration"
+  echo -e "${reset}"
   exit 1
 fi
 } #}}}
