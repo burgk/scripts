@@ -41,7 +41,9 @@ ubuntu14_64="./taniumclient_7.2.314.3476-ubuntu14_amd64.deb"
 ubuntu16_64="./taniumclient_7.2.314.3476-ubuntu16_amd64.deb"
 ubuntu18_64="./taniumclient_7.2.314.3476-ubuntu18_amd64.deb"
 aws2_64="./TaniumClient-7.2.314.3476-1.amzn2.x86_64.rpm"
-aws2018_64="./TaniumClient-7.2.314.3476-1.amzn2018.03.x86_64.rpm"
+aws2018_03_64="./TaniumClient-7.2.314.3476-1.amzn2018.03.x86_64.rpm"
+aws2017_09_64="./TaniumClient-7.2.314.3211-1.amzn2017.09.x86_64.rpm"
+aws2017_12_64="./TaniumClient-7.2.314.3211-1.amzn2017.12.x86_64.rpm"
 #}}}
 
 check_root() { #{{{
@@ -155,7 +157,7 @@ case ${distro} in
     majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{print $2}' | awk -F'.' '{print $1}')
   ;;
   Amazon)
-    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | tr -d '"' | awk -F'.' '{print $1}')
+    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | tr -d '"')
   ;;
 esac
 } #}}}
@@ -191,7 +193,7 @@ elif [[ ${distro} = "Ubuntu" ]]; then
     return
   fi
 elif [[ ${distro} = "Amazon" ]]; then
-  if [[ ${majversion} = "2" ]] || [[ ${majversion} = "2018" ]]; then
+  if [[ ${majversion} = "2" ]] || [[ ${majversion} = "2018.03" ]] || [[ ${majversion} = "2017.09" ]] || [[ ${majversion} = "2017.12" ]]; then
     supportedver="true"
     return
   else
@@ -260,7 +262,11 @@ case ${distro} in
   Amazon)
     if [[ ${majversion} = "2" && ${host64} = "true" ]]; then
       supportedarch="true"
-    elif [[ ${majversion} = "2018" && ${host64} = "true" ]]; then
+    elif [[ ${majversion} = "2018.03" && ${host64} = "true" ]]; then
+      supportedarch="true"
+    elif [[ ${majversion} = "2017.09" && ${host64} = "true" ]]; then
+      supportedarch="true"
+    elif [[ ${majversion} = "2017.12" && ${host64} = "true" ]]; then
       supportedarch="true"
     else
       supportedarch="false"
@@ -409,8 +415,16 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
       installpkg=${aws2_64}
       installmethod="svc"
       clientname="TaniumClient"
-    elif [[ ${majversion} = "2018" && ${host64} = "true" ]]; then
-      installpkg=${aws2018_64}
+    elif [[ ${majversion} = "2018.03" && ${host64} = "true" ]]; then
+      installpkg=${aws2018_03_64}
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = "2017.09" && ${host64} = "true" ]]; then
+      installpkg=${aws2017_09_64}
+      installmethod="svc"
+      clientname="TaniumClient"
+    elif [[ ${majversion} = "2017.12" && ${host64} = "true" ]]; then
+      installpkg=${aws2017_12_64}
       installmethod="svc"
       clientname="TaniumClient"
     fi
@@ -579,11 +593,11 @@ if [[ ${silentinstall} = "true" ]]; then
   case ${distro} in
     Redhat | CentOS | Oracle | SLES | openSUSE | Amazon)
       echo -e "Installing Tanium client for ${distro}, version ${majversion}" >> "${logfile}"
-      rpm -ivh ${installpkg} 2>&1 >> "${logfile}"
+      rpm -ivh ${installpkg} >> "${logfile}" 2>&1
     ;;
     Debian | debian | Ubuntu)
       echo -e "Installing Tanium client for ${distro}, version ${majversion}" >> "${logfile}"
-      dpkg -i ${installpkg} 2>&1 >> "${logfile}"
+      dpkg -i ${installpkg} >> "${logfile}" 2>&1
     ;;
     *)
       echo -e "${f_red}In function install_package: Unrecognized distro, exiting. ${distro}${reset}" >> "${logfile}"
@@ -687,10 +701,10 @@ start_services() { #{{{
 if [[ ${silentinstall} = "true" ]]; then
   if [[ ${installmethod} = "svc" ]]; then
     echo -e "Starting Tanium service" >> "${logfile}"
-    service "${clientname}" start 2>&1 >> "${logfile}"
+    service "${clientname}" start >> "${logfile}" 2>&1
   elif [[ ${installmethod} = "systemd" ]]; then
     echo -e "Starting Tanium service" >> "${logfile}"
-    systemctl start "${clientname}" 2>&1 >> "${logfile}"
+    systemctl start "${clientname}" >> "${logfile}" 2>&1
   fi
 else
   if [[ ${installmethod} = "svc" ]]; then
