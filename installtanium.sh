@@ -488,7 +488,7 @@ fi
 
 get_args() { #{{{
   silentinstall="true"
-  timestamp=$(date +%F-%T)
+  timestamp=$(date +%s)
   touch "./install-tanium-${timestamp}.log"
   logfile="./install-tanium-${timestamp}.log"
   case $1 in
