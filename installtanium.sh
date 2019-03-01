@@ -572,7 +572,72 @@ case ${response} in
     exit 1
   ;;
 esac
-
+if [[ ${distro} = "Amazon" ]]; then
+  serverip=${oitserverip}
+fi
+tmpip=$(/sbin/ifconfig | grep -w inet | grep 10 | awk '{print $2}' | awk -F'.' '{print $1"."$2}')
+case ${tmpip} in
+  10.141)
+    serverip=${oitserverip}
+  ;;
+  10.142)
+    serverip=${oitserverip}
+  ;;
+  10.143)
+    serverip=${oitserverip}
+  ;;
+  10.144)
+    serverip=${oitserverip}
+  ;;
+  10.145)
+    serverip=${oitserverip}
+  ;;
+  10.146)
+    serverip=${oitserverip}
+  ;;
+  10.147)
+    serverip=${oitserverip}
+  ;;
+  10.148)
+    serverip=${oitserverip}
+  ;;
+  10.149)
+    serverip=${oitserverip}
+  ;;
+  10.150)
+    serverip=${oitserverip}
+  ;;
+  10.151)
+    serverip=${oitserverip}
+  ;;
+  10.152)
+    serverip=${oitserverip}
+  ;;
+  10.153)
+    serverip=${oitserverip}
+  ;;
+  10.154)
+    serverip=${oitserverip}
+  ;;
+  10.155)
+    serverip=${oitserverip}
+  ;;
+  10.156)
+    serverip=${oitserverip}
+  ;;
+  10.157)
+    serverip=${oitserverip}
+  ;;
+  10.158)
+    serverip=${oitserverip}
+  ;;
+  10.159)
+    serverip=${oitserverip}
+  ;;
+  10.236)
+    serverip=${oitserverip}
+  ;;
+esac
 if [ ${response} -eq 1 ]; then
   agency="CDA"
 elif [ ${response} -eq 2 ]; then
