@@ -20,5 +20,4 @@ else
   logger "ssh-users.sh: Error - Log file not found"
   exit 1
 fi
-
-
+exit 0
