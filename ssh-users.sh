@@ -1,9 +1,10 @@
 #!/bin/bash
 # Script to record who logs in to a server and how
+# Kevin Burg - kevin.burg@state.co.us
+
 # Runs daily from crontab
 # Copy to roots homedir then add the following to /etc/crontab
-# 58 23 * * * root /root/ssh-users.sh
-# Kevin Burg - kevin.burg@state.co.us
+# 59 23 * * * root /root/ssh-users.sh
 
 logfile="/var/log/secure"
 resultfile="/home/serveradmin/ssh-users.txt"
