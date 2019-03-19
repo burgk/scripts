@@ -4,7 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 logfile="/var/log/secure"
-resultfile="/home/burgk/oracle-users.txt"
+resultfile="/home/burgk/ssh-users.txt"
 today="$(date +%b" "%d)"
 
 if [ -e "${logfile}" ]; then
@@ -13,8 +13,8 @@ if [ -e "${logfile}" ]; then
   echo -e "-----------------------------" >> "${resultfile}"
   grep -w "${today}" "${logfile}" | grep "Accepted" | grep -v grep  >> "${resultfile}"
 else
-  echo -e "Log file not found!" >> "${resultfile}"
-  logger "oracle-users.sh - log file not found"
+  echo -e "ERROR: Log file not found!" >> "${resultfile}"
+  logger "ssh-users.sh: Error - Log file not found"
   exit 1
 fi
 
