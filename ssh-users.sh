@@ -1,10 +1,12 @@
 #!/bin/bash
-# Script to log who logs in to Oracle servers and how
-# Runs daily from /etc/cron.daily
+# Script to record who logs in to a server and how
+# Runs daily from crontab
+# Copy to roots homedir then add the following to /etc/crontab
+# 58 23 * * * root /root/ssh-users.sh
 # Kevin Burg - kevin.burg@state.co.us
 
 logfile="/var/log/secure"
-resultfile="/home/burgk/ssh-users.txt"
+resultfile="/home/serveradmin/ssh-users.txt"
 today="$(date +%b" "%d)"
 
 if [ -e "${logfile}" ]; then
