@@ -7,7 +7,7 @@
 # 59 23 * * * root /root/ssh-users.sh
 
 logfile="/var/log/secure"
-resultfile="/home/${USER}/ssh-users.txt"
+resultfile="${HOME}/ssh-users.txt"
 today="$(date +%b" "%d)"
 
 if [ -e "${logfile}" ]; then
