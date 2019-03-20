@@ -7,7 +7,7 @@
 # 59 23 * * * root /root/ssh-users.sh
 
 logfile="/var/log/secure"
-resultfile="/home/serveradmin/ssh-users.txt"
+resultfile="/home/${USER}/ssh-users.txt"
 today="$(date +%b" "%d)"
 
 if [ -e "${logfile}" ]; then
@@ -16,7 +16,7 @@ if [ -e "${logfile}" ]; then
   echo -e "-----------------------------" >> "${resultfile}"
   grep -w "${today}" "${logfile}" | grep "Accepted" | grep -v grep  >> "${resultfile}"
 else
-  echo -e "ERROR: Log file not found!" >> "${resultfile}"
+  echo -e "ERROR - $(date +%F): Log file not found" >> "${resultfile}"
   logger "ssh-users.sh: Error - Log file not found"
   exit 1
 fi
