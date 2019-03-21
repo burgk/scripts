@@ -16,7 +16,7 @@ if [ -e "${logfile}" ]; then
   echo -e "Login summary for ${checkuser} on: $(date +%F)" >> "${resultfile}"
   echo -e "--------------------------------------" >> "${resultfile}"
   if grep -w "${today}" "${logfile}" | grep "Accepted" | grep -i "${checkuser}" > /dev/null 2>&1; then
-    grep -w "${today}" "${logfile}" | grep "Accepted" | grep -i "${checkuser}" | grep -v grep  >> "${resultfile}"
+    grep -w "${today}" "${logfile}" | grep "Accepted" | grep -i "${checkuser}" >> "${resultfile}"
     echo -e "\n" >> "${resultfile}"
   else
     echo -e "No "${checkuser}" logins recorded today\n" >> "${resultfile}"
