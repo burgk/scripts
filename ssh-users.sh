@@ -12,9 +12,9 @@ today="$(date +%b" "%d)"
 checkuser="oracle"
 
 if [ -e "${logfile}" ]; then
-  echo -e "------------------------------------" >> "${resultfile}"
-  echo -e "Oracle Login Summary for: $(date +%F)" >> "${resultfile}"
-  echo -e "------------------------------------" >> "${resultfile}"
+  echo -e "--------------------------------------" >> "${resultfile}"
+  echo -e "Login summary for ${checkuser} on: $(date +%F)" >> "${resultfile}"
+  echo -e "--------------------------------------" >> "${resultfile}"
   if grep -w "${today}" "${logfile}" | grep "Accepted" | grep -i "${checkuser}" > /dev/null 2>&1; then
     grep -w "${today}" "${logfile}" | grep "Accepted" | grep -i "${checkuser}" | grep -v grep  >> "${resultfile}"
     echo -e "\n" >> "${resultfile}"
