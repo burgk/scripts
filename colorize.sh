@@ -17,34 +17,35 @@
 # background \e[48;2;<r>;<g>;<b>m
 
 # Set 8 bit foreground colors
-F_BLACK="\e[1;30m"
-F_RED="\e[1;31m"
-F_GREEN="\e[1;32m"
-F_YELLOW="\e[1;33m"
-F_BLUE="\e[1;34m"
-F_MAGENTA="\e[1;35m"
-F_CYAN="\e[1;36m"
-F_WHITE="\e[1;37m"
+f_black="\e[1;30m"
+f_red="\e[1;31m"
+f_green="\e[1;32m"
+f_yellow="\e[1;33m"
+f_blue="\e[1;34m"
+f_magenta="\e[1;35m"
+f_cyan="\e[1;36m"
+f_white="\e[1;37m"
 
 # Set 8 bit background colors
-B_BLACK="\e[1;40m"
-B_RED="\e[1;41m"
-B_GREEN="\e[1;42m"
-B_YELLOW="\e[1;43m"
-B_BLUE="\e[1;44m"
-B_MAGENTA="\e[1;45m"
-B_CYAN="\e[1;46m"
-B_WHITE="\e[1;47m"
+b_black="\e[1;40m"
+b_red="\e[1;41m"
+b_green="\e[1;42m"
+b_yellow="\e[1;43m"
+b_blue="\e[1;44m"
+b_magenta="\e[1;45m"
+b_cyan="\e[1;46m"
+b_white="\e[1;47m"
 
 # Non color settings
-BOLD="\e[1m"
-RESET="\e[0m"
+bold="\e[1m"
+reset="\e[0m"
 
 # Demonstrate:
-echo -e "${F_RED} Hello${RESET} ${B_RED}World${RESET}"
-echo -e "${F_YELLOW}${B_GREEN}TESTING!${RESET}"
+echo -e "${f_red}Hello${reset} ${b_red}World${reset}"
+echo -e "${f_yellow}${b_green}TESTING!${reset}"
 echo -e "Back to plain :-("
-echo -e "${F_MAGENTA}Yep, it stays this way until"
+echo -e "${f_magenta}Yep, it stays this way until"
 echo -e "You put in the reset"
-echo -e "${RESET}See.."
-echo -e "\e[38;2;255;82;197;48;2;155;106;0mFancy${RESET} stuff"
+echo -e "${reset}See.."
+echo -e "\e[38;2;255;82;197;48;2;155;106;0mFancy${reset} stuff"
+exit 0

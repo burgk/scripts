@@ -6,36 +6,36 @@
 # see man tr for details
 
 # Set 8 bit foreground colors
-F_BLACK="\e[1;30m"
-F_RED="\e[1;31m"
-F_GREEN="\e[1;32m"
-F_YELLOW="\e[1;33m"
-F_BLUE="\e[1;34m"
-F_MAGENTA="\e[1;35m"
-F_CYAN="\e[1;36m"
-F_WHITE="\e[1;37m"
+f_black="\e[1;30m"
+f_red="\e[1;31m"
+f_green="\e[1;32m"
+f_yellow="\e[1;33m"
+f_blue="\e[1;34m"
+f_magenta="\e[1;35m"
+f_cyan="\e[1;36m"
+f_white="\e[1;37m"
 
 # Set 8 bit background colors
-B_BLACK="\e[1;40m"
-B_RED="\e[1;41m"
-B_GREEN="\e[1;42m"
-B_YELLOW="\e[1;43m"
-B_BLUE="\e[1;44m"
-B_MAGENTA="\e[1;45m"
-B_CYAN="\e[1;46m"
-B_WHITE="\e[1;47m"
+b_black="\e[1;40m"
+b_red="\e[1;41m"
+b_green="\e[1;42m"
+b_yellow="\e[1;43m"
+b_blue="\e[1;44m"
+b_magenta="\e[1;45m"
+b_cyan="\e[1;46m"
+b_white="\e[1;47m"
  
 # Non color settings
-RESET="\e[0m"
+reset="\e[0m"
 
 for i in {1..5}
 do
-NUMONE=$(${HOME}/scripts/pwgen.sh 1-6 5 5)
-NUMTWO=$(${HOME}/scripts/pwgen.sh 1-6 5 5)
-WORDONE=$(grep $NUMONE ${HOME}/Documents/DiceWare_Wordlist.txt | awk -F' ' '{ print $2 }')
-WORDTWO=$(grep $NUMTWO ${HOME}/Documents/DiceWare_Wordlist.txt | awk -F' ' '{ print $2 }')
+numone=$(${HOME}/scripts/pwgen.sh 1-6 5 5)
+numtwo=$(${HOME}/scripts/pwgen.sh 1-6 5 5)
+wordone=$(grep $numone ${HOME}/Documents/DiceWare_Wordlist.txt | awk -F' ' '{ print $2 }')
+wordtwo=$(grep $numtwo ${HOME}/Documents/DiceWare_Wordlist.txt | awk -F' ' '{ print $2 }')
 
-echo -e "${F_GREEN} Suggested words pairs are ${RESET}${F_RED} ${WORDONE} ${RESET} ${F_GREEN}and${RESET} ${F_RED} ${WORDTWO} ${RESET}"
+echo -e "${f_green} Suggested words pairs are ${reset}${f_red} ${wordone} ${reset} ${f_green}and${reset} ${f_red} ${wordtwo} ${reset}"
 done;
 
 exit 0

@@ -1,0 +1,7 @@
+check_root() { #{{{
+if (( ${EUID} != 0 )); then
+  echo -e "${f_red}You need to be use sudo or be root to run this script"
+  echo -e "For example: sudo ./$(basename ${0})${reset}"
+  exit 1
+ fi
+} #}}}
