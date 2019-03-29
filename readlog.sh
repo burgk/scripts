@@ -19,6 +19,8 @@ usage() { # {{{
   echo -e "For example: ./readlog.sh -c > March-log.txt${reset}"
   exit 1
 } # }}}
+
+# Begin {{{
 if [[ "$#" -eq "1" ]]; then
   case "$1" in
    --current | -c)
@@ -41,6 +43,5 @@ if [[ "$#" -eq "1" ]]; then
   esac
 else
   usage
-fi
+fi # }}}
 exit 0
-
