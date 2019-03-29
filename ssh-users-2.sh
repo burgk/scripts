@@ -8,23 +8,23 @@
 # 59 23 * * * root /root/ssh-users.sh <-- for loghost role
 
 # Variable definitions # {{{
-# For loghosts, verify or set sshlogfile, checkuser and role as necessary
+# Verify or set as necessary for node or loghost
 ltoday="$(date +%b" "%d)"
 htoday="$(date +%b"-"%d)"
 month=$(date +%B)
 me=$(hostname -s)
-sshlogfile="/var/log/secure" # /var/log/secure on redhat - /var/log/auth.log on debian
-resultfile="/home/burgk/ssh-users.txt"
-tmpresult="/home/burgk/tmp.out"
 truetmpresult="/var/tmp/${me}-${htoday}-true"
 falsetmpresult="/var/tmp/${me}-${htoday}-false"
 tmppidlist="/var/tmp/tmppidlist"
 jointlog=/var/tmp/$(date +%B-sshlog)
-checkuser="nomad"
-role="node" # "loghost" or "node"
-creds="burgk@vm-debian"
+sshlogfile="/var/log/secure" # SET /var/log/secure on redhat - /var/log/auth.log on debian
+resultfile="/home/burgk/ssh-users.txt" # SET /home/serveradmin/ssh-users.txt
+tmpresult="/home/burgk/tmp.out" # SET /home/serveradmin/tmp.out
+checkuser="nomad" # SET oracle
+role="node" # SET loghost or node
+creds="burgk@vm-debian" # SET serveradmin@cdotorman
+# declare -a oraenv=(cdotorman cdotorprd11 cdotorprd12 cdotorprd14 CDOTORDEV03 CDOTORDEV11 CDOTORDEV12 CDOTORDEV13 CDOTORTST13 cdotortst14)
 declare -a vmenv=(vm-fedora vm-debian)
-# declare -a oraenv=(cdotorman cdotorprd11 cdotorprd12 cdotorprd14 cdotordev03 cdotordev11 cdotordev12 cdotordev13 cdotortst13 cdotortst14)
 # }}}
 
 # Prevent logins during script execution {{{
@@ -42,7 +42,7 @@ fi # }}}
 # Begin processing logins {{{
 pidlist=$(grep "${ltoday}" "${sshlogfile}" | grep sshd | grep -v grep | grep "${checkuser}" | grep -E "Accepted|session closed" | awk '{print $5}' | tr -d "[:alpha:][:punct:]" | sort -g | uniq)
 if [[ -z "${pidlist}" ]]; then
-  echo -e "No ${checkuser} logins on ${me} on ${ltoday}" >> "${resultfile}"
+  echo -e "No ${checkuser};logins;on ${me};for;${ltoday}" >> "${resultfile}"
   touch "${falsetmpresult}"
   if [[ "${role}" == "node" ]]; then
     scp "${falsetmpresult}" "${creds}":/var/tmp/
@@ -96,30 +96,39 @@ if [[ "${role}" == "loghost" ]]; then
     echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
   fi
 
-#  for orahost in "${oraenv[@]}"; do
-#    if [[ -e /var/tmp/"${orahost}-${htoday}-true" ]]; then
-#      cat /var/tmp/"${orahost}-${htoday}-true" >> "${jointlog}"
-#      rm /var/tmp/"${orahost}-${htoday}-true"
-#      indata="true"
-#    elif [[ -e /var/tmp/"${orahost}-${htoday}-false" ]]; then
-#      rm /var/tmp/"${orahost}-${htoday}-false"
-#    fi
-#  done
-
-  for vmhost in "${vmenv[@]}"; do
-    if [[ -e /var/tmp/"${vmhost}-${htoday}-true" ]]; then
-      cat /var/tmp/"${vmhost}-${htoday}-true" >> "${jointlog}"
-      rm /var/tmp/"${vmhost}-${htoday}-true"
+  for orahost in "${oraenv[@]}"; do
+    if [[ -e /var/tmp/"${orahost}-${htoday}-true" ]]; then
+      cat /var/tmp/"${orahost}-${htoday}-true" >> "${jointlog}"
+      rm /var/tmp/"${orahost}-${htoday}-true"
       indata="true"
-    elif [[ -e /var/tmp/"${vmhost}-${htoday}-false" ]]; then
-      rm /var/tmp/"${vmhost}-${htoday}-false"
+    elif [[ -e /var/tmp/"${orahost}-${htoday}-false" ]]; then
+      rm /var/tmp/"${orahost}-${htoday}-false"
     fi
   done
 
-  if [[ "${indata}" != "true" ]]; then
-    echo -e "No ${checkuser} logins in the environment on ${ltoday}" >> "${jointlog}"
+  if [[ ! -x "${jointlog}" ]]; then
+    chmod 644 "${jointlog}"
   fi
-fi # Exit loghost }}}
+
+#  for vmhost in "${vmenv[@]}"; do
+#    if [[ -e /var/tmp/"${vmhost}-${htoday}-true" ]]; then
+#      cat /var/tmp/"${vmhost}-${htoday}-true" >> "${jointlog}"
+#      rm /var/tmp/"${vmhost}-${htoday}-true"
+#      indata="true"
+#    elif [[ -e /var/tmp/"${vmhost}-${htoday}-false" ]]; then
+#      rm /var/tmp/"${vmhost}-${htoday}-false"
+#    fi
+#  done
+
+  if [[ "${indata}" != "true" ]]; then
+    echo -e "No ${checkuser};logins;in the;environment;on ${ltoday}" >> "${jointlog}"
+  fi
+
+  archivemonth="$(date --date="$(date +%Y-%m-15) -2 month" +%B)"
+    if [[ -e /var/tmp/"${archivemonth}-sshlog" ]]; then
+      mv /var/tmp/"${archivemonth}-sshlog" /root
+    fi
+fi # Exit loghost tasks }}}
 
 # Clean up {{{
 if [[ -e "${falsetmpresult}" ]]; then
@@ -128,22 +137,15 @@ fi
 
 if [[ -e "${truetmpresult}" ]]; then
   rm "${truetmpresult}"
-fi
-
-if [[ "${role}" == "loghost" ]]; then
-archivemonth="$(date --date="$(date +%Y-%m-15) -2 month" +%B)"
-  if [[ -e /var/tmp/"${archivemonth}-sshlog" ]]; then
-    mv /var/tmp/"${archivemonth}-sshlog" /root
-  fi
 fi # }}}
 
 # Re-enable logins {{{
-# if [[ "${role}" == "node" ]]
-# sleep 120
-# rm /etc/nologin
+# if [[ "${role}" == "node" ]]; then
+#   sleep 120
+#   rm /etc/nologin
 # else
 #   sleep 60
 #   rm /etc/nologin
-# fi }}}
+# fi # }}}
 
 exit 0
