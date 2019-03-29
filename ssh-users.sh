@@ -8,7 +8,7 @@
 # 58 23 * * * root /root/ssh-users.sh <-- for node role
 # 59 23 * * * root /root/ssh-users.sh <-- for loghost role
 
-# Variable definitions # {{{
+# Misc Variable definitions # {{{
 # Verify or set as necessary for node or loghost
 ltoday="$(date +%b" "%d)"
 htoday="$(date +%b"-"%d)"
