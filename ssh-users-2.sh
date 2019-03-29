@@ -19,7 +19,6 @@ tmppidlist="/var/tmp/tmppidlist"
 jointlog=/var/tmp/$(date +%B-sshlog)
 sshlogfile="/var/log/secure" # SET /var/log/secure on redhat - /var/log/auth.log on debian
 resultfile="/home/burgk/ssh-users.txt" # SET /home/serveradmin/ssh-users.txt
-tmpresult="/home/burgk/tmp.out" # SET /home/serveradmin/tmp.out
 checkuser="nomad" # SET oracle
 role="node" # SET loghost or node
 creds="burgk@vm-debian" # SET serveradmin@cdotorman
@@ -33,10 +32,8 @@ declare -a vmenv=(vm-fedora vm-debian)
 
 # Verify persistent log exists {{{
 if [[ ! -e "${resultfile}" ]]; then
-  echo -e "Login Time;Login To;Login User;Login From;Logout Time" > "${tmpresult}"
-  echo -e "---------------;------------;------------;---------------;---------------" >> "${tmpresult}"
-  column -s";" -t < "${tmpresult}" > "${resultfile}"
-  rm "${tmpresult}"
+  echo -e "Login Time;Login To;Login User;Login From;Logout Time" > "${resultfile}"
+  echo -e "---------------;------------;------------;---------------;---------------" >> "${resultfile}"
 fi # }}}
 
 # Begin processing logins {{{
