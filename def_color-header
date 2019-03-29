@@ -1,8 +1,12 @@
 #!/bin/env bash
-# Script: 
-# Kevin Burg - kevin.burg@state.co.us
+# Purpose: 
 # Date:
+# Kevin Burg - kevin.burg@state.co.us
 
+# Misc variable definitions {{{
+# }}}
+
+# Terminal color defintions {{{
 # Define 8 bit foreground colors
 f_black="\e[1;30m"
 f_red="\e[1;31m"
@@ -25,3 +29,4 @@ b_white="\e[1;47m"
  
 # Non color settings
 reset="\e[0m"
+# }}}

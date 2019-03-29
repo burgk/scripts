@@ -1,3 +1,4 @@
+# Terminal color definitions {{{
 # Define 8 bit foreground colors
 f_black="\e[30m"
 f_red="\e[31m"
@@ -20,3 +21,4 @@ b_white="\e[47m"
  
 # Non color settings
 reset="\e[0m"
+# }}}

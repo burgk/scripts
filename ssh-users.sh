@@ -1,5 +1,6 @@
 #!/bin/bash
-# Script to record who logs in to a server and how
+# Purpose: To record who logs in to a server and how
+# Date: 20190329
 # Kevin Burg - kevin.burg@state.co.us
 
 # Runs daily from crontab

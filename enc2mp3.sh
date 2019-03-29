@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# Purpose: Wrapper for ffmpeg to convert ogg and opus files to .mp3 files
+# Date: 20180321
 # Kevin Burg - burg.kevin@gmail.com
-# Wrapper for ffmpeg to convert ogg and opus files to .mp3 files
 
+# Comments {{{
 # To match both *.opus and *.ogg files, try this in your for loop:
 # ls @(*.ogg|*.opus)
 # Requires extglob to be set in the shell
@@ -18,7 +20,9 @@
 # 7 = ~100 - range: 80-120
 # 8 = ~85 - range: 70-105
 # 9 = ~65 - range: 45-85
+# }}}
 
+# Various definitions {{{
 IFS='\'
 INPUT=${1}
 INFILEBASE=${1%.*}
@@ -27,7 +31,9 @@ OUTPUT=${INFILEBASE}.mp3
 F_RED="\e[38;2;255;0;0m"
 F_GREEN="\e[38;2;0;255;0m"
 RESET="\e[0m"
+# }}}
 
+# Validate necessary commands {{{
 if command -v ffmpeg > /dev/null 2>&1
  then
   FF=$(command -v ffmpeg)
@@ -43,8 +49,9 @@ if command -v mediainfo > /dev/null 2>&1
   echo -e "${F_RED}mediainfo not found, exiting${RESET}"
   exit 1
 fi
+# }}}
 
-setcodescale()
+setcodescale() # {{{
 {
 # let "BITRATE = $(${MI} --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
 (( BITRATE = $(${MI} --Inform="General;%OverallBitRate%" "${INPUT}") / 1000 ))
@@ -69,20 +76,21 @@ elif [ ${BITRATE} -lt "225" ]
 elif [ ${BITRATE} -lt "245" ]
  then CODECSCALE=0
 fi
-}
+} # }}}
 
-encodefile()
+encodefile() # {{{
 {
 ${FF} -hide_banner -loglevel panic -i "${INPUT}" -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 "${OUTPUT}"
-}
+} # }}}
 
-errormsg()
+errormsg() # {{{
 {
 echo -e "${F_RED}Usage: $(basename "$0") <inputfile>"
 echo -e "Currently ogg and opus files are suported"
 echo -e "Requires ffmpeg and mediainfo to be installed${RESET}"
-}
+} # }}}
 
+# Begin main tasks {{{
 if [ $# -eq 1 ]
  then
   if [ "${INFILEEXT}" = ogg ] || [ "${INFILEEXT}" = opus ]
@@ -98,4 +106,4 @@ if [ $# -eq 1 ]
  else
   errormsg
   exit 1
-fi
+fi # }}}

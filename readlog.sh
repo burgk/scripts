@@ -1,5 +1,6 @@
 #!/bin/bash
 # Purpose: Format the ssh-users.sh output for reading
+# Date: 20190329
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{

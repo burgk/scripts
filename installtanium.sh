@@ -1,5 +1,6 @@
 #!/bin/bash
-# Script to install supported Linux Tanium clients
+# Purpose: To install supported Linux Tanium clients
+# Date: 20190301
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definions #{{{

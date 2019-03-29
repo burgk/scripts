@@ -1,11 +1,15 @@
 #!/bin/bash
-# Rebuild Tanium Client package
+# Purpose: Rebuild Tanium Client package
+# Date: 20190225
+# Kevin Burg - kevin.burg@state.co.us
 
+# Misc variable definitions {{{
 builddir="${HOME}/Tanium"
 installer="${HOME}/scripts/installtanium.sh"
 installersum=$(sha1sum "${installer}" | awk '{print $1}')
 readme="${HOME}/Tanium/README.txt"
 readmesum=$(sha1sum "${readme}" | awk '{print $1}')
+# }}}
 
 rebuild_package() { #{{{
 cd "${builddir}" || exit
@@ -53,6 +57,7 @@ echo -e "Creating new tarball.."
 tar cvfa ./TaniumClient"${distro}".tar.gz ./TaniumClient"${distro}"
 } #}}}
 
+# Begin main tasks {{{
 echo -e "Available rebuild options are:"
 echo -e "All \t\t AWS"
 echo -e "Debian \t\t Oracle"
@@ -97,3 +102,6 @@ case ${response} in
   exit 1
   ;;
 esac
+# }}}
+
+exit 0
