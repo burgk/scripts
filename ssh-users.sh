@@ -94,29 +94,29 @@ if [[ "${role}" == "loghost" ]]; then
     echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
   fi
 
-  for orahost in "${oraenv[@]}"; do
-    if [[ -e /var/tmp/"${orahost}-${htoday}-true" ]]; then
-      cat /var/tmp/"${orahost}-${htoday}-true" >> "${jointlog}"
-      rm /var/tmp/"${orahost}-${htoday}-true"
-      indata="true"
-    elif [[ -e /var/tmp/"${orahost}-${htoday}-false" ]]; then
-      rm /var/tmp/"${orahost}-${htoday}-false"
-    fi
-  done
+#  for orahost in "${oraenv[@]}"; do
+#    if [[ -e /var/tmp/"${orahost}-${htoday}-true" ]]; then
+#      cat /var/tmp/"${orahost}-${htoday}-true" >> "${jointlog}"
+#      rm /var/tmp/"${orahost}-${htoday}-true"
+#      indata="true"
+#    elif [[ -e /var/tmp/"${orahost}-${htoday}-false" ]]; then
+#      rm /var/tmp/"${orahost}-${htoday}-false"
+#    fi
+#  done
 
   if [[ ! -x "${jointlog}" ]]; then
     chmod 644 "${jointlog}"
   fi
 
-#  for vmhost in "${vmenv[@]}"; do
-#    if [[ -e /var/tmp/"${vmhost}-${htoday}-true" ]]; then
-#      cat /var/tmp/"${vmhost}-${htoday}-true" >> "${jointlog}"
-#      rm /var/tmp/"${vmhost}-${htoday}-true"
-#      indata="true"
-#    elif [[ -e /var/tmp/"${vmhost}-${htoday}-false" ]]; then
-#      rm /var/tmp/"${vmhost}-${htoday}-false"
-#    fi
-#  done
+  for vmhost in "${vmenv[@]}"; do
+    if [[ -e /var/tmp/"${vmhost}-${htoday}-true" ]]; then
+      cat /var/tmp/"${vmhost}-${htoday}-true" >> "${jointlog}"
+      rm /var/tmp/"${vmhost}-${htoday}-true"
+      indata="true"
+    elif [[ -e /var/tmp/"${vmhost}-${htoday}-false" ]]; then
+      rm /var/tmp/"${vmhost}-${htoday}-false"
+    fi
+  done
 
   if [[ "${indata}" != "true" ]]; then
     echo -e "No ${checkuser};logins;in the;environment;on ${ltoday}" >> "${jointlog}"
