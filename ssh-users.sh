@@ -104,10 +104,6 @@ if [[ "${role}" == "loghost" ]]; then
 #    fi
 #  done
 
-  if [[ ! -x "${jointlog}" ]]; then
-    chmod 644 "${jointlog}"
-  fi
-
   for vmhost in "${vmenv[@]}"; do
     if [[ -e /var/tmp/"${vmhost}-${htoday}-true" ]]; then
       cat /var/tmp/"${vmhost}-${htoday}-true" >> "${jointlog}"
@@ -117,6 +113,10 @@ if [[ "${role}" == "loghost" ]]; then
       rm /var/tmp/"${vmhost}-${htoday}-false"
     fi
   done
+
+  if [[ ! -x "${jointlog}" ]]; then
+    chmod 644 "${jointlog}"
+  fi
 
   if [[ "${indata}" != "true" ]]; then
     echo -e "No ${checkuser};logins;in the;environment;on ${ltoday}" >> "${jointlog}"
