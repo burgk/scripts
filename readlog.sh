@@ -21,7 +21,7 @@ usage() { # {{{
   exit 1
 } # }}}
 
-# Begin {{{
+# Begin main tasks {{{
 if [[ "$#" -eq "1" ]]; then
   case "$1" in
    --current | -c)
