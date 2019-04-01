@@ -1,51 +1,55 @@
 #!/usr/bin/env bash
-# Iterate over the lines in a file and perform a command on each line
+# Purpose: Check hostnames from a file or individually and see if DNS has stale records
+#          Loop from the cmd line instead of INFILE
+# Date: 20181031
+# Kevin Burg - kevin.burg@state.co.us
 
+# Misc variable definitions {{{
 # INFILE=/home/burgk/scripts/IP_Relay_Addrs.txt
+f_red="\e[38;2;255;0;0m"
+f_green="\e[38;2;0;255;0m"
+f_yellow="\e[38;2;255;255;0m"
+f_gold="\e[38;2;255;215;0m"
+f_white="\e[38;2;255;255;255m"
+reset="\e[0m"
+fdnshost=${1^^} # Use parameter expansion to make result all CAPS
+logfile="/home/burgk/dnscheck.txt"
+# }}}
 
-RED="\e[38;2;255;0;0m"
-GREEN="\e[38;2;0;255;0m"
-YELLOW="\e[38;2;255;255;0m"
-GOLD="\e[38;2;255;215;0m"
-WHITE="\e[38;2;255;255;255m"
-RESET="\e[0m"
-FDNSHOST=${1^^}
-LOGFILE="/home/burgk/dnscheck.txt"
-host ${FDNSHOST} &> /dev/null
- if [ $? == 0 ]
- then
-  FDNSHOSTADDR=$(host ${FDNSHOST} | awk -F' ' '{ print $4 }')
- else
-  echo -e "${RED}${FDNSHOST} is not in DNS${RESET}"
-  echo -e "${FDNSHOST} is not in DNS" 1>>${LOGFILE}
+# Begin main tasks {{{
+if host "${fdnshost}" &> /dev/null; then
+  fdnshostaddr=$(host "${fdnshost}" | awk -F' ' '{ print $4 }')
+else
+  echo -e "${f_red}${fdnshost} is not in DNS${reset}"
+  echo -e "${fdnshost} is not in DNS" 1>>${logfile}
   exit 1
- fi
-echo -e "Forward record shows ${YELLOW}${FDNSHOST}${RESET} is ${YELLOW}${FDNSHOSTADDR}${RESET}"
-echo -e "Forward record shows ${FDNSHOST} is ${FDNSHOSTADDR}" 1>>${LOGFILE}
-host ${FDNSHOSTADDR} &> /dev/null
- if [ $? == 1 ]
- then
-  echo -e "${RED}No reverse record${RESET}"
-  echo -e "No reverse record" 1>>${LOGFILE} 
- else
-  RDNSHOST=$(host ${FDNSHOSTADDR} | awk -F' ' '{ print $5 }' | cut -d. -f1 | tr '[:lower:]' '[:upper:]') 
-  echo -e "Reverse record shows ${GOLD}${RDNSHOST}${RESET} is ${GOLD}${FDNSHOSTADDR}${RESET}"
-  echo -e "Reverse record shows ${RDNSHOST} is ${FDNSHOSTADDR}" 1>>${LOGFILE}
-  if [ ${FDNSHOST} == ${RDNSHOST} ]
-  then
-   echo -e "${GREEN}Forward and Reverse match${RESET}"
-   echo -e "Forward and Reverse match" 1>>${LOGFILE}
+fi
+
+echo -e "Forward record shows ${f_yellow}${fdnshost}${reset} is ${f_yellow}${fdnshostaddr}${reset}"
+echo -e "Forward record shows ${fdnshost} is ${fdnshostaddr}" 1>>${logfile}
+host "${fdnshostaddr}" &> /dev/null
+if [ $? == 1 ]; then
+  echo -e "${f_red}No reverse record${reset}"
+  echo -e "No reverse record" 1>>${logfile} 
+else
+  rdnshost=$(host "${fdnshostaddr}" | awk -F' ' '{ print $5 }' | cut -d. -f1 | tr '[:lower:]' '[:upper:]') 
+  echo -e "Reverse record shows ${f_gold}${rdnshost}${reset} is ${f_gold}${fdnshostaddr}${reset}"
+  echo -e "Reverse record shows ${rdnshost} is ${fdnshostaddr}" 1>>${logfile}
+  if [ "${fdnshost}" == "${rdnshost}" ]; then
+    echo -e "${f_green}Forward and Reverse match${reset}"
+    echo -e "Forward and Reverse match" 1>>${logfile}
   else
-   echo -e "${RED}Forward and Reverse are different${RESET}"
-   echo -e "Forward and Reverse are different" 1>>${LOGFILE}
+    echo -e "${f_red}Forward and Reverse are different${reset}"
+    echo -e "Forward and Reverse are different" 1>>${logfile}
   fi
- fi
-ping -c 1 ${FDNSHOSTADDR} &> /dev/null
- if [ $? == 1 ]
- then
-  echo -e "${RED}${FDNSHOSTADDR} not pingable${RESET} \n"
-  echo -e "${FDNSHOSTADDR} not pingable \n" 1>>${LOGFILE}
- else
-  echo -e "${GREEN}${FDNSHOSTADDR} responds to ping${RESET} \n"
-  echo -e "${FDNSHOSTADDR} responds to ping \n" 1>>${LOGFILE}
- fi
+fi
+
+if ping -c 1 "${fdnshostaddr}" &> /dev/null; then
+  echo -e "${f_green}${fdnshostaddr} responds to ping${reset} \n"
+  echo -e "${fdnshostaddr} responds to ping \n" 1>>${logfile}
+else
+  echo -e "${f_red}${fdnshostaddr} not pingable${reset} \n"
+  echo -e "${fdnshostaddr} not pingable \n" 1>>${logfile}
+fi # }}}
+
+exit 0
