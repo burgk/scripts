@@ -1,7 +1,24 @@
-check_root() { #{{{
-if (( ${EUID} != 0 )); then
+check_root() { #{{{ String comparison
+if [[ $EUID -ne 0 ]]; then
   echo -e "${f_red}You need to be use sudo or be root to run this script"
   echo -e "For example: sudo ./$(basename ${0})${reset}"
   exit 1
  fi
 } #}}}
+
+check_root() { # {{{ Arithmetic comparison
+if (( EUID != 0 )); then
+  echo -e "${f_red}You need to be use sudo or be root to run this script"
+  echo -e "For example: sudo ./$(basename ${0})${reset}"
+  exit 1
+ fi
+} #}}}
+
+check_root() { # {{{ Check via an external program
+if [[ $(id -u) -ne 0 ]]; then
+  echo -e "${f_red}You need to be use sudo or be root to run this script"
+  echo -e "For example: sudo ./$(basename ${0})${reset}"
+  exit 1
+ fi
+} #}}}
+
