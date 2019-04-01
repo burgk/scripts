@@ -3,9 +3,6 @@
 # Date:
 # Kevin Burg - kevin.burg@state.co.us
 
-# Misc variable definitions {{{
-# }}}
-
 # Terminal color defintions {{{
 # Define 8 bit foreground colors
 f_black="\e[1;30m"
@@ -30,3 +27,12 @@ b_white="\e[1;47m"
 # Non color settings
 reset="\e[0m"
 # }}}
+
+# Misc variable definitions {{{
+
+# }}}
+
+# Begin main tasks {{{
+
+# }}}
+
