@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
+# Purpose: Utility to start, stop or query the status of the Cisco services
+#          It tries to be reasonably careful, but there are no guarantees :-)
+# Date: 20181024
 # Kevin Burg - burg.kevin@gmail.com
-# Utility to start, stop or query the status of the Cisco services
-# It tries to be reasonably careful, but there are no guarantees :-)
 
 if [ $# -ne 1 ]
 then

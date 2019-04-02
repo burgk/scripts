@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
+# Purpose: Demonstrate bash array usage
+# Date: 20181024
 # Kevin Burg - burg.kevin@gmail.com
-# Basic bash array example
+
 filecontent=( $(cat array-in.txt) )
 
 for t in "${filecontent[@]}"
