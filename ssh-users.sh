@@ -82,14 +82,12 @@ fi # Exit PID processing }}}
 # Begin processing loghost tasks {{{
 if [[ "${role}" == "loghost" ]]; then
   if [[ -e ${jointlog} ]]; then
-    logmonth=$(find /var/tmp/*-sshlog | cut -d'-' -f1 | cut -d'/' -f4)
+    logmonth=$(find "${jointlog}" | cut -d'-' -f1 | cut -d'/' -f4)
     if [[ "${month}" != "${logmonth}" ]]; then
-      touch "${jointlog}"
       echo -e "Login Time;Login To;Login User;Login From;Logout Time" > "${jointlog}"
       echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
     fi
   else 
-    touch "${jointlog}"
     echo -e "Login Time;Login To;User;Login From;Logout Time" > "${jointlog}"
     echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
   fi
