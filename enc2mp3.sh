@@ -24,86 +24,88 @@
 
 # Various definitions {{{
 IFS='\'
-INPUT=${1}
-INFILEBASE=${1%.*}
-INFILEEXT=${1##*.}
-OUTPUT=${INFILEBASE}.mp3
-F_RED="\e[38;2;255;0;0m"
-F_GREEN="\e[38;2;0;255;0m"
-RESET="\e[0m"
+input=${1}
+infilebase=${1%.*}
+infileext=${1##*.}
+output=${infilebase}.mp3
+f_red="\e[38;2;255;0;0m"
+f_green="\e[38;2;0;255;0m"
+reset="\e[0m"
 # }}}
 
 # Validate necessary commands {{{
 if command -v ffmpeg > /dev/null 2>&1
  then
-  FF=$(command -v ffmpeg)
+  ff=$(command -v ffmpeg)
  else
-  echo -e "${F_RED}ffmpeg not found, exiting${RESET}"
+  echo -e "${f_red}ffmpeg not found, exiting${reset}"
   exit 1
 fi
 
 if command -v mediainfo > /dev/null 2>&1
  then
-  MI=$(command -v mediainfo)
+  mi=$(command -v mediainfo)
  else
-  echo -e "${F_RED}mediainfo not found, exiting${RESET}"
+  echo -e "${f_red}mediainfo not found, exiting${reset}"
   exit 1
 fi
 # }}}
 
 setcodescale() # {{{
 {
-# let "BITRATE = $(${MI} --Inform="General;%OverallBitRate%" ${INPUT}) / 1000"
-(( BITRATE = $(${MI} --Inform="General;%OverallBitRate%" "${INPUT}") / 1000 ))
-if [ ${BITRATE} -lt "65" ]
- then CODECSCALE=9
-elif [ ${BITRATE} -lt "85" ]
- then CODECSCALE=8
-elif [ ${BITRATE} -lt "100" ]
- then CODECSCALE=7
-elif [ ${BITRATE} -lt "115" ]
- then CODECSCALE=6
-elif [ ${BITRATE} -lt "130" ]
- then CODECSCALE=5
-elif [ ${BITRATE} -lt "165" ]
- then CODECSCALE=4
-elif [ ${BITRATE} -lt "175" ]
- then CODECSCALE=3
-elif [ ${BITRATE} -lt "190" ]
- then CODECSCALE=2
-elif [ ${BITRATE} -lt "225" ]
- then CODECSCALE=1
-elif [ ${BITRATE} -lt "245" ]
- then CODECSCALE=0
+# let "bitrate = $(${mi} --Inform="General;%OverallBitRate%" ${input}) / 1000"
+(( bitrate = $(${mi} --Inform="General;%OverallBitRate%" "${input}") / 1000 ))
+if [ ${bitrate} -lt "65" ]
+ then codescale=9
+elif [ ${bitrate} -lt "85" ]
+ then codescale=8
+elif [ ${bitrate} -lt "100" ]
+ then codescale=7
+elif [ ${bitrate} -lt "115" ]
+ then codescale=6
+elif [ ${bitrate} -lt "130" ]
+ then codescale=5
+elif [ ${bitrate} -lt "165" ]
+ then codescale=4
+elif [ ${bitrate} -lt "175" ]
+ then codescale=3
+elif [ ${bitrate} -lt "190" ]
+ then codescale=2
+elif [ ${bitrate} -lt "225" ]
+ then codescale=1
+elif [ ${bitrate} -lt "245" ]
+ then codescale=0
 fi
 } # }}}
 
 encodefile() # {{{
 {
-${FF} -hide_banner -loglevel panic -i "${INPUT}" -acodec libmp3lame -qscale:a ${CODECSCALE}  -map_metadata 0:s:0 "${OUTPUT}"
+${ff} -hide_banner -loglevel panic -i "${input}" -acodec libmp3lame -qscale:a ${codescale}  -map_metadata 0:s:0 "${output}"
 } # }}}
 
 errormsg() # {{{
 {
-echo -e "${F_RED}Usage: $(basename "$0") <inputfile>"
+echo -e "${f_red}Usage: $(basename "$0") <inputfile>"
 echo -e "Currently ogg and opus files are suported"
-echo -e "Requires ffmpeg and mediainfo to be installed${RESET}"
+echo -e "Requires ffmpeg and mediainfo to be installed${reset}"
 } # }}}
 
 # Begin main tasks {{{
 if [ $# -eq 1 ]
  then
-  if [ "${INFILEEXT}" = ogg ] || [ "${INFILEEXT}" = opus ]
+  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ]
    then
     setcodescale
-    echo -e "${F_GREEN}Encoding ${INPUT} to ${OUTPUT} at ${CODECSCALE}${RESET}"
+    echo -e "${f_green}Encoding ${input} to ${output} at ${codescale}${reset}"
     encodefile
     exit 0
   else
-   echo -e "${F_RED}Only ogg and opus files currently supported. Exiting.${RESET}"
+   echo -e "${f_red}Only ogg and opus files currently supported. Exiting.${reset}"
    exit 1
   fi
  else
   errormsg
   exit 1
 fi # }}}
+
+exit 0
