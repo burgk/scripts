@@ -20,6 +20,8 @@ tmppidlist="/var/tmp/tmppidlist"
 jointlog=/var/tmp/$(date +%B-sshlog)
 sshlogfile="/var/log/secure" # SET /var/log/secure on redhat - /var/log/auth.log on debian
 resultfile="/home/burgk/ssh-users.txt" # SET /home/serveradmin/ssh-users.txt
+header1="Login Time;Login To;Login User;Login From;Logout Time"
+header2="---------------;------------;------------;---------------;---------------"
 checkuser="nomad" # SET oracle
 role="node" # SET loghost or node
 creds="burgk@vm-debian" # SET serveradmin@cdotorman
@@ -33,8 +35,8 @@ declare -a vmenv=(vm-fedora vm-debian)
 
 # Verify persistent log exists {{{
 if [[ ! -e "${resultfile}" ]]; then
-  echo -e "Login Time;Login To;Login User;Login From;Logout Time" > "${resultfile}"
-  echo -e "---------------;------------;------------;---------------;---------------" >> "${resultfile}"
+  echo -e "${header1}" > "${resultfile}"
+  echo -e "${header2}" >> "${resultfile}"
 fi # }}}
 
 # Begin processing logins {{{
@@ -84,12 +86,12 @@ if [[ "${role}" == "loghost" ]]; then
   if [[ -e ${jointlog} ]]; then
     logmonth=$(find "${jointlog}" | cut -d'-' -f1 | cut -d'/' -f4)
     if [[ "${month}" != "${logmonth}" ]]; then
-      echo -e "Login Time;Login To;Login User;Login From;Logout Time" > "${jointlog}"
-      echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
+      echo -e "${header1}" > "${jointlog}"
+      echo -e "${header2}" >> "${jointlog}"
     fi
   else 
-    echo -e "Login Time;Login To;User;Login From;Logout Time" > "${jointlog}"
-    echo -e "---------------;------------;------------;---------------;---------------" >> "${jointlog}"
+    echo -e "${header1}" > "${jointlog}"
+    echo -e "${header2}" >> "${jointlog}"
   fi
 
 #  for orahost in "${oraenv[@]}"; do
