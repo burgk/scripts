@@ -478,7 +478,7 @@ else
 fi
 } #}}}
 
-get_domain() { #{{{
+get_domain() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
 tmpdomain=$(hostname -d | awk -F'.' '{print $1}')
 if [[ -z ${tmpdomain} ]]; then
   domain=${tmpdomain^^} # not supported in bash < 4
@@ -487,7 +487,7 @@ else
 fi 
 } #}}}
 
-get_args() { #{{{
+get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
   silentinstall="true"
   timestamp=$(date +%s)
   touch "./install-tanium-${timestamp}.log"
@@ -495,6 +495,11 @@ get_args() { #{{{
   case $1 in
   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
     cliarg=$1
+    ;;
+  -u) # Unattended arg
+    if [[ "${domain}" = DOT ]]; then
+      cliarg="4"
+    fi
     ;;
   *)
     echo -e "${f_red}In function get_args: Not a valid agency, exiting.${reset}" >> "${logfile}"
