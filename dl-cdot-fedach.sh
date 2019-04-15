@@ -4,8 +4,8 @@
 # Kevin Burg - Kevin.Burg@state.co.us
 
 # Misc variable definitions {{{
-rundate=$(date +%F-%T)
 destdir="/home/burgk/Documents/FedACH"
+rundate=$(date +%F-%H%M%S)
 resultfile="${destdir}/${rundate}-CDOT-FedACH.txt"
 # }}}
 
