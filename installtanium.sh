@@ -479,9 +479,9 @@ fi
 } #}}}
 
 get_domain() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
-tmpdomain=$(hostname -d | awk -F'.' '{print $1}')
-if [[ -z ${tmpdomain} ]]; then
-  domain=${tmpdomain^^} # not supported in bash < 4
+tmpdomain=$(hostname -d | cut -d. -f1)
+if [[ -n ${tmpdomain} ]]; then
+  domain=$(echo "${tmpdomain}" | tr '[:lower:]' '[:upper:]') # could use param exp if bash >4
 else
   domain="Unconfigured"
 fi 
@@ -497,9 +497,65 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     cliarg=$1
     ;;
   -u) # Unattended arg
-    if [[ "${domain}" = DOT ]]; then
+    case $agdom in
+    CDA)
+      cliarg="1"
+    ;;
+    CDHS)
+      cliarg="2"
+    ;;
+    CDLE)
+      cliarg="3"
+    ;;
+    CDOT)
       cliarg="4"
-    fi
+    ;;
+    CDPHE)
+      cliarg="5"
+    ;;
+    CDPS)
+      cliarg="6"
+    ;;
+    CHS)
+      cliarg="7"
+    ;;
+    CST)
+      cliarg="8"
+    ;;
+    DMVA)
+      cliarg="9"
+    ;;
+    DNR)
+      cliarg="10"
+    ;;
+    DOC)
+      cliarg="11"
+    ;;
+    DOLA)
+      cliarg="12"
+    ;;
+    DOR)
+      cliarg="13"
+    ;;
+    DORA)
+      cliarg="14"
+    ;;
+    DPA)
+      cliarg="15"
+    ;;
+    GOV)
+      cliarg="16"
+    ;;
+    HCPF)
+      cliarg="17"
+    ;;
+    OIT)
+      cliarg="18"
+    ;;
+    OITEDIT)
+      cliarg="19"
+    ;;
+    esac
     ;;
   *)
     echo -e "${f_red}In function get_args: Not a valid agency, exiting.${reset}" >> "${logfile}"
