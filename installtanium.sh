@@ -497,9 +497,10 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     cliarg=$1
     ;;
   -u) # Unattended arg
+    silentinstall="true"
     unattended="true"
     case "${domain}" in
-    CDA)
+    INT) # CDA
       cliarg="1"
     ;;
     CDHS)
@@ -508,25 +509,25 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     CDLE)
       cliarg="3"
     ;;
-    CDOT)
+    DOT) # CDOT
       cliarg="4"
     ;;
-    CDPHE)
+    DPHE) # CDPHE
       cliarg="5"
     ;;
-    CDPS)
+    CDPS) # Not in vRA?
       cliarg="6"
     ;;
-    CHS)
+    CHS1) # CHS
       cliarg="7"
     ;;
-    CST)
+    TREASURY) # CST
       cliarg="8"
     ;;
-    DMVA)
+    DMVA) # Not in vRA?
       cliarg="9"
     ;;
-    DNR)
+    NATURENET) # DNR
       cliarg="10"
     ;;
     DOC)
@@ -535,7 +536,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     DOLA)
       cliarg="12"
     ;;
-    DOR)
+    REVENUE) # DOR
       cliarg="13"
     ;;
     DORA)
@@ -544,7 +545,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     DPA)
       cliarg="15"
     ;;
-    GOV)
+    STATECAPITOL) # GOV
       cliarg="16"
     ;;
     HCPF)
@@ -553,7 +554,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     OIT)
       cliarg="18"
     ;;
-    OITEDIT)
+    OITEDIT) # Not in vRA?
       cliarg="19"
     ;;
     Unconfigured)
