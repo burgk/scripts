@@ -22,7 +22,7 @@ done
 
 echo -e "Size in KB;Directory" > "${outfile}"
 echo -e "----------;---------" >> "${outfile}"
-sort -rn "${tmpfile}" | cat "${tmpfile}" >> "${outfile}"
+sort -rn "${tmpfile}" >> "${outfile}"
 
 if [[ "${#dirlist[@]}" -ge  "${termsize}" ]]; then
   column -s";" -t < "${outfile}" | "${pager}"
