@@ -4,7 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
-declare -a dirlist=( $(find . -maxdepth 1 -type d | cut -b 3-) )
+mapfile -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3- | grep .)
 tmpfile="/tmp/$(date +%s)-largedir.temp"
 # }}}
 
