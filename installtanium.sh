@@ -488,16 +488,17 @@ fi
 } #}}}
 
 get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
-  silentinstall="true"
   timestamp=$(date +%s)
   touch "./install-tanium-${timestamp}.log"
   logfile="./install-tanium-${timestamp}.log"
   case $1 in
   1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19)
+    silentinstall="true"
     cliarg=$1
     ;;
   -u) # Unattended arg
-    case $agdom in
+    unattended="true"
+    case "${domain}" in
     CDA)
       cliarg="1"
     ;;
@@ -555,6 +556,12 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     OITEDIT)
       cliarg="19"
     ;;
+    Unconfigured)
+      echo -e "${f_red}Error in function get_args: Domain is unconfigured and we" >> "${logfile}"
+      echo -e "were asked to perform an Unattended install which requires" >> "${logfile}"
+      echo -e "a configured FQDN. Script will exit now.${reset}" >> "${logfile}"
+      exit 1
+    ;;
     esac
     ;;
   *)
@@ -564,7 +571,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
   esac
 } #}}}
 
-show_banner() { #{{{
+show_banner() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
 if [[ ${silentinstall} = "true" ]]; then
   if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]] && [[ ${pkg_exists} = "true" ]] && [[ ${pub_exists} = "true" ]]; then
     echo -e "Found distribution: ${distro}" >> "${logfile}"
@@ -576,7 +583,22 @@ if [[ ${silentinstall} = "true" ]]; then
     echo -e "Found install package: ${installpkg}" >> "${logfile}"
     echo -e "Found Tanium key file: ${taniumpub}" >> "${logfile}"
   else
-    echo -e "In function show_banner: This is not a supported configuration, exiting." >> "${logfile}"
+    echo -e "In function show_banner - silent: This is not a supported configuration, exiting." >> "${logfile}"
+    exit 1
+  fi
+elif [[ ${unattended} = "true" ]]; then
+  if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]] && [[ ${pkg_exists} = "true" ]] && [[ ${pub_exists} = "true" ]]; then
+    echo -e "Found distribution: ${distro}" >> "${logfile}"
+    echo -e "Supported distro: ${supported_distro}" >> "${logfile}"
+    echo -e "Found version: ${majversion}" >> "${logfile}"
+    echo -e "Supported version: ${supportedver}" >> "${logfile}"
+    echo -e "Found architecture: ${architecture}" >> "${logfile}"
+    echo -e "Found agency domain: ${domain}" >> "${logfile}"
+    echo -e "Supported architecture: ${supportedarch}" >> "${logfile}"
+    echo -e "Found install package: ${installpkg}" >> "${logfile}"
+    echo -e "Found Tanium key file: ${taniumpub}" >> "${logfile}"
+  else
+    echo -e "In function show_banner - unattended: This is not a supported configuration, exiting." >> "${logfile}"
     exit 1
   fi
 else
@@ -883,6 +905,18 @@ if [[ ${silentinstall} = "true" ]]; then
     echo -e "are open to ${serverip}" >> "${logfile}"
     exit 0
   fi
+elif [[ "${unattended}" = "true" ]]; then
+  if [[ ${distro} = "Amazon" ]]; then
+    echo -e "Installation Complete" >> "${logfile}"
+    echo -e "Please verify that your AWS security group allows ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
+    echo -e "to ${serverip}" >> "${logfile}"
+    exit 0
+  else
+    echo -e "Installation Complete" >> "${logfile}"
+    echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
+    echo -e "are open to ${serverip}" >> "${logfile}"
+    exit 0
+  fi
 else
   echo -e "${f_green}Installation Complete${reset}"
   echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP"
@@ -909,13 +943,24 @@ if [[ "$#" -eq 0 ]]; then
   start_services
   final_message
 elif [[ "$#" -eq 1 ]]; then
-  get_args "$1"
-  show_banner
-  prompt_agency
-  install_package
-  configure_tanium
-  start_services
-  final_message
+  if [[ "$1" == "-u" ]]; then
+    get_args "$1"
+    get_domain
+    show_banner
+    prompt_agency
+    install_package
+    configure_tanium
+    start_services
+    final_message
+  else
+    get_args "$1"
+    show_banner
+    prompt_agency
+    install_package
+    configure_tanium
+    start_services
+    final_message
+  fi
 else
   echo -e "${f_red}Unrecognized command line argument, exiting${reset}"
   exit 1
