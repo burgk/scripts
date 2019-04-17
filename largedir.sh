@@ -5,7 +5,9 @@
 
 # Misc variable definitions {{{
 mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
-tmpfile="/tmp/$(date +%s)-largedir.sh.tmp"
+stamp="$(date +%s)"
+tmpfile="/tmp/${stamp}-largedir.sh.tmp"
+outfile="/tmp/${stamp}-largedir.sh.out"
 pager="$(command -v less)"
 termsize="$(tput lines)"
 # }}}
@@ -18,13 +20,18 @@ for dir in "${dirlist[@]}"; do
   cd .. || exit
 done
 
+echo -e "Size in KB;Directory" > "${outfile}"
+echo -e "----------;---------" >> "${outfile}"
+sort -rn "${tmpfile}" | cat "${tmpfile}" >> "${outfile}"
+
 if [[ "${#dirlist[@]}" -ge  "${termsize}" ]]; then
-  sort -rn "${tmpfile}" | column -s";" -t -N "Size in KB",Directory | "${pager}"
+  column -s";" -t < "${outfile}" | "${pager}"
 else
-  sort -rn "${tmpfile}" | column -s";" -t -N "Size in KB",Directory
+  column -s";" -t < "${outfile}"
 fi
 
 rm "${tmpfile}"
+rm "${outfile}"
 # }}}
 
 exit 0
