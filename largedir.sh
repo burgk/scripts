@@ -18,7 +18,7 @@ for dir in "${dirlist[@]}"; do
 done
 echo -e "Size in KB;Directory" > "${outfile}"
 echo -e "----------;---------" >> "${outfile}"
-sort -rn "${tmpfile}" | cat "${tmpfile}" >> "${outfile}"
+sort -rn "${tmpfile}" >> "${outfile}"
 column -s";" -t < "${outfile}"
 rm "${tmpfile}"
 rm "${outfile}"
