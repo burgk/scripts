@@ -17,8 +17,8 @@ if [[ "$#" = "0" ]]; then
   mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
 else
   userpath="${1}"
-  mapfile -s1 -t dirlist < <(find "${userpath}" -maxdepth 1 -type d)
   cd "${userpath}" || exit
+  mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
 fi
   
 for dir in "${dirlist[@]}"; do
