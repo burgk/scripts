@@ -163,45 +163,37 @@ case ${distro} in
 esac
 } #}}}
 
+validate_distroversion_err() { #{{{
+echo -e "${f_red}"
+echo -e "Error: In function validate_distroversion"
+echo -e "Found distro: ${distro}" 
+echo -e "Found major version: ${majversion}"
+echo -e "This is not a supported combination, exiting."
+echo -e "${reset}"
+exit 1
+#}}}
+
 validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then
   if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = "Ubuntu" ]]; then
   if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]] || [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
@@ -213,13 +205,7 @@ elif [[ ${distro} = "Amazon" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 else
   supportedver="false"
@@ -895,18 +881,6 @@ fi
 
 final_message() { #{{{
 if [[ ${silentinstall} = "true" ]]; then
-  if [[ ${distro} = "Amazon" ]]; then
-    echo -e "Installation Complete" >> "${logfile}"
-    echo -e "Please verify that your AWS security group allows ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
-    echo -e "to ${serverip}" >> "${logfile}"
-    exit 0
-  else
-    echo -e "Installation Complete" >> "${logfile}"
-    echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
-    echo -e "are open to ${serverip}" >> "${logfile}"
-    exit 0
-  fi
-elif [[ "${unattended}" = "true" ]]; then
   if [[ ${distro} = "Amazon" ]]; then
     echo -e "Installation Complete" >> "${logfile}"
     echo -e "Please verify that your AWS security group allows ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"

@@ -4,7 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
-mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
+# mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
 stamp="$(date +%s)"
 tmpfile="/tmp/${stamp}-largedir.sh.tmp"
 outfile="/tmp/${stamp}-largedir.sh.out"
@@ -13,6 +13,14 @@ termsize="$(tput lines)"
 # }}}
 
 # Begin main tasks {{{
+if [[ "$#" = "0" ]]; then
+  mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
+else
+  userpath="${1}"
+  mapfile -s1 -t dirlist < <(find "${userpath}" -maxdepth 1 -type d)
+  cd "${userpath}" || exit
+fi
+  
 for dir in "${dirlist[@]}"; do
   cd "${dir}" || exit
   size=$("du" -s | cut -f1) >/dev/null 2>&1
@@ -21,7 +29,7 @@ for dir in "${dirlist[@]}"; do
 done
 
 echo -e "Size in KB;Directory" > "${outfile}"
-echo -e "----------;---------" >> "${outfile}"
+echo -e "---m--g---;---------" >> "${outfile}"
 sort -rn "${tmpfile}" >> "${outfile}"
 
 if [[ "${#dirlist[@]}" -ge  "${termsize}" ]]; then
