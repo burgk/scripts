@@ -4,7 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
-mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
+# mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
 stamp="$(date +%s)"
 tmpfile="/tmp/${stamp}-largedir.sh.tmp"
 outfile="/tmp/${stamp}-largedir.sh.out"
@@ -14,13 +14,14 @@ termsize="$(tput lines)"
 
 # Begin main tasks {{{
 
-# if [[ "$#" = "0" ]]; then
-#   mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
-# else
-#   userpath="${1}"
-#   cd "${userpath}" || exit
-#   mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
-# fi
+if [[ "$#" = "0" ]]; then
+  mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
+else
+  echo -e "No arguments supported, this must be run from the location"
+  echo -e "you want the list from.  Use of sudo or root may be"
+  echo -e "required for some directories. Exiting now."
+  exit 1
+fi
   
 for dir in "${dirlist[@]}"; do
   cd "${dir}" || exit
