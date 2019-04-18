@@ -30,8 +30,8 @@ for dir in "${dirlist[@]}"; do
   cd .. || exit
 done
 
-echo -e "Size in KB;Directory" > "${outfile}"
-echo -e "---m--g---;---------" >> "${outfile}"
+echo -e "Size  in  KB;Directory" > "${outfile}"
+echo -e "---m--g--t--;---------" >> "${outfile}"
 sort -rn "${tmpfile}" >> "${outfile}"
 
 if [[ "${#dirlist[@]}" -ge  "${termsize}" ]]; then
