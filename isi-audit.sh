@@ -8,6 +8,7 @@ f_red="\e[1;31m"
 f_green="\e[1;32m"
 reset="\e[0m"
 num='^[0-9]+$'
+valid_date="false"
 # nodecount=$(ls /ifs/.ifsvar/audit/logs | grep -c node)
 # isi_log_start="2016-03-15"
 valid_sdate="false"
@@ -72,9 +73,9 @@ while [ "${valid_smonth}" = "false" ]; do
   size_smonth="${#user_smonth}"
   if ! [[ "${user_smonth}" =~ ${num} ]]; then
     echo -e "Invalid data type, number expected"
-  elif (( "${size_smonth}" != 2 )); then
+  elif [[ "${size_smonth}" -ne "2" ]]; then
     echo -e "Need 2 digit month"
-  elif (( "${user_smonth#0}" > "12" )); then
+  elif [[ "${user_smonth#0}" -lt "01" ]] || [[ "${user_smonth#0}" -gt "12" ]]; then
     echo -e "Invalid month entered"
   else
     valid_smonth="true"
@@ -90,19 +91,19 @@ while [ "${valid_sday}" = "false" ]; do
   size_sday="${#user_sday}"
   if ! [[ "${user_sday}" =~ ${num} ]]; then
     echo -e "Invalid data type, number expected"
-  elif (( "${size_sday}" != 2 )); then
+  elif [[ "${size_sday}" -ne "2" ]]; then
     echo -e "Need 2 digit month"
   else
     case "${user_smonth}" in
     01 | 03 | 05 | 07 | 08 | 10 | 12)
-      if (( "${user_sday#0}" > "31" )); then
+      if [[ "${user_sday#0}" -lt "01" ]] || [[ "${user_sday#0}" -gt "31" ]]; then
         echo -e "Invalid day entered for month ${user_smonth}"
       else
         valid_sday="true"
       fi
     ;;
     04 | 06 | 09 | 11)
-      if (( "${user_sday#0}" > "30" )); then
+      if [[ "${user_sday#0}" -lt "01" ]] || [[ "${user_sday#0}" -gt "30" ]]; then
         echo -e "Invalid day entered for month ${user_smonth}"
       else
         valid_sday="true"
@@ -110,14 +111,14 @@ while [ "${valid_sday}" = "false" ]; do
     ;;
     02)
       yearmod=$(( "${user_syear}" % 4 ))
-      if (( "${yearmod}" == "0" )); then # leap year
-        if (( "${user_sday#0}" > "29" )); then # 29 days in a leap year
+      if [[ "${yearmod}" == "0" ]]; then # leap year
+        if [[ "${user_sday#0}" -lt "01" ]] || [[ "${user_sday#0}" -gt "29" ]]; then # 29 days in a leap year
           echo -e "Invalid day entered for month ${user_smonth}"
         else
           valid_sday="true"
         fi
       else # not a leap year
-        if (( "${user_sday#0}" > "28" )); then # 28 days in non leap years
+        if [[ "${user_sday#0}" -lt "01" ]] || [[ "${user_sday#0}" -gt "28" ]]; then # 28 days in non leap years
           echo -e "Invalid day entered for month ${user_smonth}"
         else
           valid_sday="true"
@@ -136,7 +137,7 @@ while [ "${valid_shour}" = "false" ]; do
   read -e -r user_shour
   if ! [[ "${user_shour}" =~ ${num} ]]; then
     echo -e "Invalid data type, number expected"
-  elif (( "${user_shour#0}" > "23" )); then
+  elif [[ "${user_shour#0}" -gt "23" ]]; then
     echo -e "Invalid hour entered"
   else
     valid_shour="true"
@@ -151,7 +152,7 @@ while [ "${valid_smin}" = "false" ]; do
   read -e -r user_smin
   if ! [[ "${user_smin}" =~ ${num} ]]; then
     echo "Invalid data type, number expected"
-  elif (( "${user_smin#0}" > "59" )); then
+  elif [[ "${user_smin#0}" -gt "59" ]]; then
     echo -e "Invalid minute entered"
   else
     valid_smin="true"
@@ -166,9 +167,9 @@ while [ "${valid_eyear}" = "false" ]; do
   read -e -r user_eyear
   if ! [[ "${user_eyear}" =~ ${num} ]]; then
     echo "Invalid data type, number expected"
-  elif (( "${user_eyear}" < "2015" )) || (( "${user_eyear}" > "${c_year}" )); then
+  elif [[ "${user_eyear}" -lt "2015" ]] || [[ "${user_eyear}" -gt "${c_year}" ]]; then
     echo -e "Year entered out of range"
-  elif (( "${user_eyear}" < "${user_syear}" )); then
+  elif [[ "${user_eyear}" -lt "${user_syear}" ]]; then
     echo -e "End year must be equal to or greater than start year"
   else
     valid_eyear="true"
@@ -184,18 +185,18 @@ while [ "${valid_emonth}" = "false" ]; do
   size_emonth="${#user_emonth}"
   if ! [[ "${user_emonth}" =~ ${num} ]]; then
     echo -e "Invalid data type, number expected"
-  elif (( "${size_emonth}" != "2" )); then
+  elif [[ "${size_emonth}" -ne "2" ]]; then
     echo -e "Use 2 digits for month please"
-  elif (( "${user_emonth#0}" > "12" )); then
+  elif [[ "${user_smonth#0}" -lt "01" ]] || [[ "${user_emonth#0}" -gt "12" ]]; then
     echo -e "Invalid month entered"
-  fi
-  if (( "${user_eyear}" >= "${user_syear}" )); then
-    if (( "${user_emonth#0}" >= "${user_smonth#0}" )); then
-#      echo -e "End month must be equal to or greater than start month"
+  elif [[ "${user_eyear}" -eq "${user_syear}" ]]; then
+    if [[ "${user_emonth#0}" -ge "${user_smonth#0}" ]]; then
       valid_emonth="true"
+    else
+      echo -e "End month can't be before start month"
     fi
-#  else
-#    valid_emonth="true"
+  elif [[ "${user_eyear}" -gt "${user_syear}" ]]; then
+    valid_emonth="true"
   fi
 done
 } # }}} End prompt_emonth
@@ -206,60 +207,80 @@ while [ "${valid_eday}" = "false" ]; do
   echo -n "End day [DD]: "
   read -e -r user_eday
   size_eday="${#user_eday}"
-  if ! [[ "${user_eday}" =~ ${num} ]]; then
-    echo -e "Invalid data type, number expected"
-  elif (( "${size_eday}" != 2 )); then
-    echo -e "Need 2 digit month"
-  else
     case "${user_emonth}" in
     01 | 03 | 05 | 07 | 08 | 10 | 12)
-      if (( "${user_eday#0}" > "31" )); then
+      if ! [[ "${user_eday}" =~ ${num} ]]; then
+        echo -e "Invalid data type, number expected"
+      elif [[ "${size_eday#0}" -ne "2" ]]; then
+        echo -e "Need 2 digit day"
+      elif [[ "${user_eday#0}" -lt "01" ]] || [[ "${user_eday#0}" -gt "31" ]]; then
         echo -e "Invalid day entered for month ${user_emonth}"
-      elif (( "${user_eyear}" >= "${user_syear}" )); then
-        if (( "${user_emonth#0}" >= "${user_smonth#0}" )); then
-          if (( "${user_eday#0}" >= "${user_sday#0}" )); then
+      elif [[ "${user_eyear}" -eq "${user_syear}" ]]; then
+        if [[ "${user_emonth#0}" -eq "${user_smonth#0}" ]]; then
+          if [[ "${user_eday#0}" -ge "${user_sday#0}" ]]; then
             valid_eday="true"
+          else
+            echo "End day can't be before start day"
           fi
         fi
+      elif [[ "${user_eyear}" -gt "${user_syear}" ]]; then
+        valid_eday="true"
       fi
     ;;
     04 | 06 | 09 | 11)
-      if (( "${user_eday#0}" > "30" )); then
+      if ! [[ "${user_eday}" =~ ${num} ]]; then
+        echo -e "Invalid data type, number expected"
+      elif [[ "${size_eday#0}" -ne "2" ]]; then
+        echo -e "Need 2 digit day"
+      elif [[ "${user_eday#0}" -lt "01" ]] || [[ "${user_eday#0}" -gt "30" ]]; then
         echo -e "Invalid day entered for month ${user_emonth}"
-      elif (( "${user_eyear}" >= "${user_syear}" )); then
-        if (( "${user_emonth#0}" >= "${user_smonth#0}" )); then
-          if (( "${user_eday#0}" >= "${user_sday#0}" )); then
+      elif [[ "${user_eyear}" -ge "${user_syear}" ]]; then
+        if [[ "${user_emonth#0}" -ge "${user_smonth#0}" ]]; then
+          if [[ "${user_eday#0}" -ge "${user_sday#0}" ]]; then
             valid_eday="true"
+          else
+            echo -e "End day can't be before start day"
           fi
         fi
       fi
     ;;
     02)
       yearmod=$(( "${user_eyear}" % 4 ))
-      if (( "${yearmod}" == "0" )); then # leap year
-        if (( "${user_eday#0}" > "29" )); then # 29 days in a leap year
+      if ! [[ "${user_eday}" =~ ${num} ]]; then
+        echo -e "Invalid data type, number expected"
+      elif [[ "${size_eday#0}" -ne "2" ]]; then
+        echo -e "Need 2 digit day"
+      elif [[ "${yearmod}" != "0" ]]; then # not leap year
+        if [[ "${user_eday#0}" -lt "01" ]] || [[ "${user_eday#0}" -gt "28" ]]; then # 28 days in non leap year
           echo -e "Invalid day entered for month ${user_emonth}"
-        elif (( "${user_eyear}" >= "${user_syear}" )); then
-          if (( "${user_emonth#0}" >= "${user_smonth#0}" )); then
-            if (( "${user_eday#0}" >= "${user_sday#0}" )); then
-              valid_eday="true"
-            fi
+        fi
+      elif [[ "${user_eyear}" -ge "${user_syear}" ]]; then
+        if [[ "${user_emonth#0}" -ge "${user_smonth#0}" ]]; then
+          if [[ "${user_eday#0}" -ge "${user_sday#0}" ]]; then
+            valid_eday="true"
+          else
+            echo -e "End day can't be before start day"
           fi
         fi
-      else # not a leap year
-        if (( "${user_eday#0}" > "28" )); then # 28 days in non leap years
+      elif (( "${yearmod}" == "0" )); then # leap year
+        if ! [[ "${user_eday}" =~ ${num} ]]; then
+          echo -e "Invalid data type, number expected"
+        elif [[ "${size_eday#0}" -ne "2" ]]; then
+          echo -e "Need 2 digit day"
+        elif [[ "${user_eday#0}" -lt "01" ]] || [[ "${user_eday#0}" -gt "29" ]]; then # 29 days in a leap year
           echo -e "Invalid day entered for month ${user_emonth}"
-        elif (( "${user_eyear}" >= "${user_syear}" )); then
-          if (( "${user_emonth#0}" >= "${user_smonth#0}" )); then
-            if (( "${user_eday#0}" >= "${user_sday#0}" )); then
+        elif [[ "${user_eyear}" -ge "${user_syear}" ]]; then
+          if [[ "${user_emonth#0}" -ge  "${user_smonth#0}" ]]; then
+            if [[ "${user_eday#0}" -ge "${user_sday#0}" ]]; then
               valid_eday="true"
+            else
+              echo -e "End day can't be before start day"
             fi
           fi
         fi
       fi
     ;;
     esac
-  fi
 done
 } #}}} End prompt_eday
 
@@ -270,29 +291,33 @@ while [ "${valid_ehour}" = "false" ]; do
   read -e -r user_ehour
   if ! [[ "${user_ehour}" =~ ${num} ]]; then
     echo -e "Invalid data type, number expected"
-  elif (( "${user_ehour#0}" > "23" )); then
+  elif [[ "${user_ehour#0}" -gt "23" ]]; then
     echo -e "Invalid hour entered"
-  elif (( "${user_ehour#0}" < "${user_shour#0}" )); then
-    echo -e "End hour must be equal to or greater than start hour"
-  else
-    valid_ehour="true"
+  elif [[ "${user_eday#0}" -eq "${user_sday#0}" ]]; then
+    if  [[ "${user_ehour#0}" -lt "${user_shour#0}" ]]; then
+      echo -e "End hour must be equal to or greater than start hour"
+    else
+      valid_ehour="true"
+    fi
   fi
 done
 } #}}} End prompt_ehour
 
 prompt_emin(){ #{{{
 valid_emin="false"
-while [ "${valid_emin}" = "false" ]; do
+while [[ "${valid_emin}" = "false" ]]; do
   echo -n "End minutes: "
   read -e -r user_emin
   if ! [[ "${user_emin}" =~ ${num} ]]; then
     echo "Invalid data type, number expected"
-  elif (( "${user_emin#0}" > "59" )); then
+  elif [[ "${user_emin#0}" -gt "59" ]]; then
     echo -e "Invalid minute entered"
-  elif (( "${user_emin#0}" <= "${user_smin#0}" )); then
-    echo -e "End minute must be greater than start minute"
-  else
-    valid_emin="true"
+  elif [[ "${user_ehour#0}" -eq "${user_shour#0}" ]]; then
+    if  [[ "${user_emin#0}" -le "${user_smin#0}" ]]; then
+      echo -e "End minute must be greater than start minute"
+    else
+      valid_emin="true"
+    fi
   fi
 done
 } #}}} End prompt_smin
@@ -312,7 +337,7 @@ prompt_eday
 # prompt_ehour
 # prompt_emin
 
-echo -e "Start: ${user_syear}-${user_smonth}-${user_sday}" #  ${user_shour}:${user_smin}"
+echo -e "Start: ${user_syear}-${user_smonth}-${user_sday}" # ${user_shour}:${user_smin}"
 echo -e "End: ${user_eyear}-${user_emonth}-${user_eday}" # ${user_ehour}:${user_emin}"
 #}}}
 
