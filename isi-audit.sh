@@ -81,36 +81,120 @@ done
 # }}} End prompt_end
 
 prompt_sloc(){ # {{{
-echo -e "\nAvailable domain / Access zones to search are:"
-echo -e "[1] CDA\t\t[6] CDOT\t[11] DORA"
-echo -e "[2] CDHA\t[7] CDPHE\t[12] GOV"
-echo -e "[3] CDHSHIPAA\t[8] DEPTS\t[13] HCPF"
-echo -e "[4] CDLE\t[9] DOLA\t[14] Legislative"
-echo -e "[5] CDOC\t[10] DOR\t[15] OIT"
-echo -n "Which domain/Access zone are we searching: "
-read -e -r user_sloc
+valid_sloc="false"
+while [[ "${valid_sloc}" = "false" ]]; do
+  echo -e "\nAvailable domain / Access zones to search are:"
+  echo -e "[1] CDA\t\t\t[7] CST"
+  echo -e "[2] CDHS\t\t[8] DEPTS"
+  echo -e "[3] CDLE\t\t[9] DOLA"
+  echo -e "[4] CDOC\t\t[10] GOV"
+  echo -e "[5] CDOT\t\t[11] HCPF"
+  echo -e "[6] CDPHE\t\t[12] OIT"
+  echo -n "Which domain/Access zone are we searching: "
+  read -e -r user_sloc
+  case "${user_sloc}" in
+  1)
+    user_zone="CDA"
+    user_ad="INT.AG.STATE.CO.US"
+    valid_sloc="true"
+  ;;
+  2)
+    user_zone="CDHS"
+    user_ad="CDHS.STATE.CO.US"
+    valid_sloc="true"
+  ;;
+  3)
+    user_zone="CDLE"
+    user_ad="CDLE.INT"
+    valid_sloc="true"
+  ;;
+  4)
+    user_zone="CDOC"
+    user_ad="CDOC.CORRECTIONS.LCL"
+    valid_sloc="true"
+  ;;
+  5)
+    user_zone="CDOT"
+    user_ad="DOT.STATE.CO.US"
+    valid_sloc="true"
+  ;;
+  6)
+    user_zone="CDPHE"
+    user_ad="DPHE.LOCAL"
+    valid_sloc="true"
+  ;;
+  7)
+    user_zone="CST"
+    user_ad="TREASURY.COLORADO.LCL"
+    valid_sloc="true"
+  ;;
+  8)
+    user_zone="DEPTS"
+    user_ad="DEPTS.COLORADO.LCL"
+    valid_sloc="true"
+  ;;
+  9)
+    user_zone="DOLA"
+    user_ad="DOLA.LOCAL"
+    valid_sloc="true"
+  ;;
+  10)
+    user_zone="GOV"
+    user_ad="STATECAPITOL.COLORADO.LCL"
+    valid_sloc="true"
+  ;;
+  11)
+    user_zone="HCPF"
+    user_ad="HCPF.STATE.CO.US"
+    valid_sloc="true"
+  ;;
+  12)
+    user_zone="OIT"
+    user_ad="OIT.COLORADO.LCL"
+    valid_sloc="true"
+  ;;
+  *)
+    echo -e "Error: Invalid Access Zone / Domain entered"
+  ;;
+  esac
+done
 }
 # }}} End prompt_sloc
 
 prompt_stype(){ # {{{
-echo -e "\n"
-echo -n "Will this search be for a [U]ser or [P]ath: "
-read -e -r user_stype
-case "${user_stype}" in
-  U | User)
-  echo -n "What is the Windows AD user id to search: "
-  read -e -r user_suser
-  ;;
-  P | Path)
-  echo -n "What is the full path to search: "
-  read -e -r user_spath
-  ;;
-  *)
-  echo -e "Error: Invalid choice, please type:"
-  echo -e "U | User for a user based search"
-  echo -e "P | Path for a directory based search"
-  ;;
-esac
+valid_stype="false"
+while [[ "${valid_stype}" = "false" ]]; do
+  echo -e "\n"
+  echo -n "Will this search be for a [U]ser or [P]ath: "
+  read -e -r user_tmptype
+  case "${user_tmptype}" in
+    U | u | User)
+      valid_stype="true"
+      user_stype="User"
+      echo -n "What is the Windows AD user id to search: "
+      read -e -r user_suser
+      if [[ "${local_os}" != *inux* ]]; then
+        user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" | grep SID | cut -d: -f2)"
+      else
+        echo -e "--> Isilon command to lookup user SID runs here <--"
+        user_sid="IsilonCommandWouldPutTheSIDHere"
+      fi
+    ;;
+    P | p | Path)
+      valid_stype="true"
+      user_stype="Path"
+      echo -e "Enter the path with the format of"
+      printf "%s\n" '\\ifs\<accesszone>\path\to\search'
+      echo -n "What is the full path to search: "
+      read -e -r user_spath
+    ;;
+    *)
+      echo -e "Error: Invalid choice, please type:"
+      echo -e "U | User for a user based search"
+      echo -e "P | Path for a directory based search"
+    ;;
+  esac
+done
 }
 # }}} End prompt_search
 
@@ -123,12 +207,13 @@ prompt_sloc
 prompt_stype
 echo -e "\nStart is: ${user_sdate}"
 echo -e "End is: ${user_edate}"
-echo -e "Search location is: ${user_sloc}"
+echo -e "Search location is: ${user_zone}"
 echo -e "Search type is: ${user_stype}"
-if [[ "${user_stype}" = "U" ]]; then
+if [[ "${user_stype}" = "U" ]] || [[ "${user_stype}" = "u" ]] || [[ "${user_stype}" = "User" ]]; then
   echo -e "Search criteria: ${user_suser}"
+  echo -e "User resolves to: ${user_sid}"
 else
-  echo -e "Search criteria: ${user_spath}"
+  echo "Search criteria: ${user_spath}"
 fi
 # }}}
 
