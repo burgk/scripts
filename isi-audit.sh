@@ -7,6 +7,7 @@
 dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5][0-9])$'
 efisilogdate="1450015382" # Earliest date on EFX400 Isilon
 curdate="$(date +%s)"
+local_os="$(uname -o)"
 # }}}
 
 # Functions {{{
@@ -18,14 +19,23 @@ while [ "${valid_sdate}" = "false" ]; do
   read -e -r user_sdate
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-#  elif [[ $(date --date="${user_sdate}" +%s) ]]; then # Linux date format
-  elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
-#    epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
-    epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
-    if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
-      echo -e "Error: Date is out of range"
-    else
-      valid_sdate="true"
+  elif [[ "${local_os}" = *inux* ]]; then
+    if [[ $(date --date="${user_sdate}" +%s) ]]; then # Linux date format
+      epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
+        if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
+          echo -e "Error: Date is out of range"
+        else
+          valid_sdate="true"
+        fi
+    fi
+  elif [[ "${local_os}" != *inux* ]]; then
+    if [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
+      epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
+        if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
+          echo -e "Error: Date is out of range"
+        else
+          valid_sdate="true"
+        fi
     fi
   else
     echo -e "Invalid date entered"
@@ -41,10 +51,8 @@ while [ "${valid_edate}" = "false" ]; do
   read -e -r user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-#  elif [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
-  elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
-#    epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
-    epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
+  elif [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
+    epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
     if [[ "${epoch_edate}" -gt "${curdate}" ]]; then
       echo -e "Error: Date is out of range"
     elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
@@ -52,6 +60,8 @@ while [ "${valid_edate}" = "false" ]; do
     else
       valid_edate="true"
     fi
+  elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
+    epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
   else
     echo -e "Invalid date entered"
   fi
