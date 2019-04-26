@@ -20,13 +20,15 @@ while [ "${valid_sdate}" = "false" ]; do
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
   elif [[ "${local_os}" = *inux* ]]; then
-    if [[ $(date --date="${user_sdate}" +%s) ]]; then # Linux date format
+    if [[ $(date --date="${user_sdate}" +%s 2>/dev/null) ]]; then # Linux date format
       epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
         if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
           echo -e "Error: Date is out of range"
         else
           valid_sdate="true"
         fi
+    else
+      echo -e "Error: Invalid date"
     fi
   elif [[ "${local_os}" != *inux* ]]; then
     if [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
@@ -51,27 +53,36 @@ while [ "${valid_edate}" = "false" ]; do
   read -e -r user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-  elif [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
-    epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
-    if [[ "${epoch_edate}" -gt "${curdate}" ]]; then
-      echo -e "Error: Date is out of range"
-    elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-      echo -e "Error: Start date is before end date"
-    else
-      valid_edate="true"
+  elif [[ "${local_os}" = *inux* ]]; then
+    if [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
+      epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
+        if [[ "${epoch_edate}" -gt "${curdate}" ]]; then
+          echo -e "Error: Date is out of range"
+        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
+          echo -e "Error: Start date is before end date"
+        else
+          valid_edate="true"
+        fi
     fi
-  elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
-    epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
-  else
-    echo -e "Invalid date entered"
+  elif [[ "${local_os}" != *inux* ]]; then
+    if [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
+      epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
+        if [[ "${epoch_edate}" -gt "${curdate}" ]]; then
+          echo -e "Error: Date is out of range"
+        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
+          echo -e "Error: Start date is before end date"
+        else
+          valid_edate="true"
+        fi
+    fi
   fi
 done
 }
 # }}} End prompt_end
 
 prompt_sloc(){ # {{{
-echo -e "Available domain / Access zones to search are:"
-echo -e "[1] CDA\t[6] CDOT\t[11] DORA"
+echo -e "\nAvailable domain / Access zones to search are:"
+echo -e "[1] CDA\t\t[6] CDOT\t[11] DORA"
 echo -e "[2] CDHA\t[7] CDPHE\t[12] GOV"
 echo -e "[3] CDHSHIPAA\t[8] DEPTS\t[13] HCPF"
 echo -e "[4] CDLE\t[9] DOLA\t[14] Legislative"
@@ -82,21 +93,22 @@ read -e -r user_sloc
 # }}} End prompt_sloc
 
 prompt_stype(){ # {{{
-echo -n "Will this search be for a [U]ser, [D]irectory or [F]ile: "
+echo -e "\n"
+echo -n "Will this search be for a [U]ser or [P]ath: "
 read -e -r user_stype
 case "${user_stype}" in
   U | User)
-  echo -n "What AD Domain is the user in: "
+  echo -n "What is the Windows AD user id to search: "
+  read -e -r user_suser
   ;;
-  D | Directory)
-  ;;
-  F | File)
+  P | Path)
+  echo -n "What is the full path to search: "
+  read -e -r user_spath
   ;;
   *)
   echo -e "Error: Invalid choice, please type:"
   echo -e "U | User for a user based search"
-  echo -e "D | Directory for a directory based search"
-  echo -e "F | File for a file based search"
+  echo -e "P | Path for a directory based search"
   ;;
 esac
 }
@@ -109,10 +121,15 @@ prompt_start
 prompt_end
 prompt_sloc
 prompt_stype
-echo -e "Start is: ${user_sdate} - ${epoch_sdate}"
-echo -e "End is: ${user_edate} - ${epoch_edate}"
+echo -e "\nStart is: ${user_sdate}"
+echo -e "End is: ${user_edate}"
 echo -e "Search location is: ${user_sloc}"
 echo -e "Search type is: ${user_stype}"
+if [[ "${user_stype}" = "U" ]]; then
+  echo -e "Search criteria: ${user_suser}"
+else
+  echo -e "Search criteria: ${user_spath}"
+fi
 # }}}
 
 exit 0
