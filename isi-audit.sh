@@ -80,10 +80,20 @@ done
 }
 # }}} End prompt_end
 
+search_logs(){ # {{{
+search_range="$(( epoch_edate - epoch_sdate ))"
+if [[ "${search_range}" -gt "86400" ]]; then
+  echo -e "Notice: Search range is greater than 1 day"
+else
+  echo -e "Notice: Search range is less than 1 day"
+fi
+}
+# }}} End search_logs
+
 prompt_sloc(){ # {{{
 valid_sloc="false"
 while [[ "${valid_sloc}" = "false" ]]; do
-  echo -e "\nAvailable domain / Access zones to search are:"
+  echo -e "\nAvailable AD domains / Access zones to search are:"
   echo -e "[1] CDA\t\t\t[7] CST"
   echo -e "[2] CDHS\t\t[8] DEPTS"
   echo -e "[3] CDLE\t\t[9] DOLA"
@@ -168,7 +178,7 @@ while [[ "${valid_stype}" = "false" ]]; do
   echo -n "Will this search be for a [U]ser or [P]ath: "
   read -e -r user_tmptype
   case "${user_tmptype}" in
-    U | u | User)
+    u | U)
       valid_stype="true"
       user_stype="User"
       echo -n "What is the Windows AD user id to search: "
@@ -180,7 +190,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         user_sid="IsilonCommandWouldPutTheSIDHere"
       fi
     ;;
-    P | p | Path)
+    p | P)
       valid_stype="true"
       user_stype="Path"
       echo -e "Enter the path with the format of"
@@ -190,8 +200,8 @@ while [[ "${valid_stype}" = "false" ]]; do
     ;;
     *)
       echo -e "Error: Invalid choice, please type:"
-      echo -e "U | User for a user based search"
-      echo -e "P | Path for a directory based search"
+      echo -e "u | U for a user based search"
+      echo -e "p | P for a directory based search"
     ;;
   esac
 done
@@ -203,13 +213,15 @@ done
 # Begin main tasks  {{{
 prompt_start
 prompt_end
+search_logs
 prompt_sloc
 prompt_stype
 echo -e "\nStart is: ${user_sdate}"
 echo -e "End is: ${user_edate}"
+echo -e "Search size is: ${search_range}"
 echo -e "Search location is: ${user_zone}"
 echo -e "Search type is: ${user_stype}"
-if [[ "${user_stype}" = "U" ]] || [[ "${user_stype}" = "u" ]] || [[ "${user_stype}" = "User" ]]; then
+if [[ "${user_stype}" = "User" ]]; then
   echo -e "Search criteria: ${user_suser}"
   echo -e "User resolves to: ${user_sid}"
 else
