@@ -21,7 +21,7 @@
 # 8 = ~85 - range: 70-105
 # 9 = ~65 - range: 45-85
 # }}}
-
+set -x
 # Various definitions {{{
 IFS='\'
 input=${1}
@@ -80,7 +80,7 @@ fi
 
 encodefile() # {{{
 {
-${ff} -hide_banner -loglevel panic -i "${input}" -acodec libmp3lame -qscale:a ${codescale}  -map_metadata 0:s:0 "${output}"
+${ff} -hide_banner -loglevel info -i "${input}" -acodec libmp3lame -qscale:a ${codescale}  -map_metadata 0:s:0 "${output}"
 } # }}}
 
 errormsg() # {{{
