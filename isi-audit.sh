@@ -8,6 +8,7 @@ dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5]
 efisilogdate="1450015382" # Earliest date on EFX400 Isilon
 curdate="$(date +%s)"
 local_os="$(uname -o)"
+outfile="/ifs/${curdate}_log.out"
 # }}}
 
 # Functions {{{
@@ -79,16 +80,6 @@ while [ "${valid_edate}" = "false" ]; do
 done
 }
 # }}} End prompt_end
-
-search_logs(){ # {{{
-search_range="$(( epoch_edate - epoch_sdate ))"
-if [[ "${search_range}" -gt "86400" ]]; then
-  echo -e "Notice: Search range is greater than 1 day"
-else
-  echo -e "Notice: Search range is less than 1 day"
-fi
-}
-# }}} End search_logs
 
 prompt_sloc(){ # {{{
 valid_sloc="false"
@@ -207,6 +198,29 @@ while [[ "${valid_stype}" = "false" ]]; do
 done
 }
 # }}} End prompt_search
+
+search_logs(){ # {{{
+search_range="$(( epoch_edate - epoch_sdate ))"
+if [[ "${search_range}" -gt "86400" ]]; then
+  echo -e "Notice: Search range is greater than 1 day"
+else
+  echo -e "Notice: Search range is less than 1 day"
+fi
+# isi_for_array -s "isi_audit_viewer -t protocol -s ${user_sdate} -e ${user_edate}" > "${outfile}"
+
+}
+# }}} End search_logs
+
+create_share(){ # {{{
+echo -e "Share will be created with Everyone - Full Control SMB permissions"
+read -p -r -e "Share Access Zone: " user_shareaz
+read -p -r -e "Share name: " user_sharename
+read -p -r -e "Share description: " user_sharedescription
+read -p -r -e "Share path: " user_sharepath
+isi smb shares create "${user_sharename}" "${user_sharepath}" --create-path --description="${user_sharedescription}" --zone="${user_shareaz}" 
+isi smb shares permission "${user_sharename}" --wellknown Everyone --permission full --zone="${user_shareaz}"
+}
+# }}} End create share
 
 # }}} End functions section
 
