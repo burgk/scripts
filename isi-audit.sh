@@ -85,14 +85,20 @@ prompt_sloc(){ # {{{
 valid_sloc="false"
 while [[ "${valid_sloc}" = "false" ]]; do
   echo -e "\nAvailable AD domains / Access zones to search are:"
-  echo -e "[1] CDA\t\t\t[7] CST"
-  echo -e "[2] CDHS\t\t[8] DEPTS"
-  echo -e "[3] CDLE\t\t[9] DOLA"
-  echo -e "[4] CDOC\t\t[10] GOV"
-  echo -e "[5] CDOT\t\t[11] HCPF"
-  echo -e "[6] CDPHE\t\t[12] OIT"
-  echo -n "Which domain/Access zone are we searching: "
-  read -e -r user_sloc
+#  echo -e "[1] CDA\t\t\t[7] CST"
+#  echo -e "[2] CDHS\t\t[8] DEPTS"
+#  echo -e "[3] CDLE\t\t[9] DOLA"
+#  echo -e "[4] CDOC\t\t[10] GOV"
+#  echo -e "[5] CDOT\t\t[11] HCPF"
+#  echo -e "[6] CDPHE\t\t[12] OIT"
+  printf "%-12s %-12s\n" "[1] CDA" "[7] CST"
+  printf "%-12s %-12s\n" "[2] CDHS" "[8] DEPTS"
+  printf "%-12s %-12s\n" "[3] CDLE" "[9] DOLA"
+  printf "%-12s %-12s\n" "[4] CDOC" "[10] GOV"
+  printf "%-12s %-12s\n" "[5] CDOT" "[11] HCPF"
+  printf "%-12s %-12s\n" "[6] CDPHE" "[12] OIT"
+#  echo -n "Which domain/Access zone are we searching: "
+  read -rp "Which domain / Access Zone are we searching: " user_sloc
   case "${user_sloc}" in
   1)
     user_zone="CDA"
@@ -202,11 +208,15 @@ done
 search_logs(){ # {{{
 search_range="$(( epoch_edate - epoch_sdate ))"
 if [[ "${search_range}" -gt "86400" ]]; then
-  echo -e "Notice: Search range is greater than 1 day"
+  echo -e "Notice: Search range is greater than 1 day, this may be slow"
 else
   echo -e "Notice: Search range is less than 1 day"
 fi
-# isi_for_array -s "isi_audit_viewer -t protocol -s ${user_sdate} -e ${user_edate}" > "${outfile}"
+if [[ "${local_os}" = *inux* ]]; then
+  echo -e "-->  ISILON audit view command runs here  <--"
+else
+  isi_for_array -s "isi_audit_viewer -t protocol -s ${user_sdate} -e ${user_edate}" > "${outfile}"
+fi
 
 }
 # }}} End search_logs
