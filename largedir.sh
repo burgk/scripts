@@ -13,7 +13,6 @@ termsize="$(tput lines)"
 # }}}
 
 # Begin main tasks {{{
-
 if [[ "$#" = "0" ]]; then
   mapfile -s1 -t dirlist < <(find . -maxdepth 1 -type d | cut -b 3-)
 else
