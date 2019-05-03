@@ -12,16 +12,28 @@ termsize="$(tput lines)"
 
 # }}}
 
+# Functions {{{
+get_sizes(){ # {{{
+for dir in .[!.]* *; do
+  if [[ -d "${dir}" ]]; then
+    cd "${dir}" 2>/dev/null || return 
+    size=$("du" -s 2>/dev/null | cut -f1)
+    echo -e "${size};${dir}" >> "${tmpfile}"
+    cd .. || exit
+  else
+    :
+  fi
+done
+} # }}} End get_sizes
+
+# }}}
+
 # Begin main tasks {{{
 if [[ "$#" = "0" ]]; then
-  for dir in .[!.]* *; do
-    if [[ -d "${dir}" ]]; then
-      cd "${dir}" || exit
-      size=$("du" -s | cut -f1) >/dev/null 2>&1
-      echo -e "${size};${dir}" >> "${tmpfile}"
-      cd .. || exit
-    fi
-  done
+  if (( EUID != 0 )); then
+    echo -e "WARNING: Not running as root, results may not be accurate!"
+  fi
+  get_sizes
 else
   echo -e "No arguments supported, this must be run from the location"
   echo -e "you want the list from.  Use of sudo or root may be"
