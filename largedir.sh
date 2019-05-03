@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: For loop example
-# Date: 2019-05-21
+# Purpose: Find the largest directories in the current dir
+# Date: 2019-04-21
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
@@ -20,8 +20,6 @@ if [[ "$#" = "0" ]]; then
       size=$("du" -s | cut -f1) >/dev/null 2>&1
       echo -e "${size};${dir}" >> "${tmpfile}"
       cd .. || exit
-    else
-      :
     fi
   done
 else
