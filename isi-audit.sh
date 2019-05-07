@@ -9,6 +9,8 @@ efisilogdate="1450015382" # Earliest date on EFX400 Isilon
 curdate="$(date +%s)"
 local_os="$(uname -o)"
 outfile="/ifs/${curdate}_log.out"
+nodecount="$(ls /ifs/.ifsvar/audit/logs | wc -l)"
+# zcat <nodelog.gz> | sed -e /s/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip > filter.gz
 # }}}
 
 # Functions {{{
@@ -82,21 +84,20 @@ done
 # }}} End prompt_end
 
 prompt_sloc(){ # {{{
+# echo -e "Loading AD Provider list... Please wait"
+# declare -a adslist=( $( isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
+# echo -e "Done. Continuing\n"
+
 valid_sloc="false"
 while [[ "${valid_sloc}" = "false" ]]; do
   echo -e "\nAvailable AD domains / Access zones to search are:"
-#  echo -e "[1] CDA\t\t\t[7] CST"
-#  echo -e "[2] CDHS\t\t[8] DEPTS"
-#  echo -e "[3] CDLE\t\t[9] DOLA"
-#  echo -e "[4] CDOC\t\t[10] GOV"
-#  echo -e "[5] CDOT\t\t[11] HCPF"
-#  echo -e "[6] CDPHE\t\t[12] OIT"
   printf "%-12s %-12s\n" "[1] CDA" "[7] CST"
   printf "%-12s %-12s\n" "[2] CDHS" "[8] DEPTS"
   printf "%-12s %-12s\n" "[3] CDLE" "[9] DOLA"
   printf "%-12s %-12s\n" "[4] CDOC" "[10] GOV"
   printf "%-12s %-12s\n" "[5] CDOT" "[11] HCPF"
   printf "%-12s %-12s\n" "[6] CDPHE" "[12] OIT"
+  printf "%-12s\n" "[13] DOTTST"
 #  echo -n "Which domain/Access zone are we searching: "
   read -rp "Which domain / Access Zone are we searching: " user_sloc
   case "${user_sloc}" in
@@ -160,13 +161,28 @@ while [[ "${valid_sloc}" = "false" ]]; do
     user_ad="OIT.COLORADO.LCL"
     valid_sloc="true"
   ;;
+  13)
+    user_zone="DOTTST"
+    user_ad="DOTTSTDOMAIN.COM"
+    valid_sloc="true"
+  ;;
   *)
     echo -e "Error: Invalid Access Zone / Domain entered"
   ;;
   esac
 done
-}
-# }}} End prompt_sloc
+} # }}} End prompt_sloc
+
+prompt_sloc2(){ #{{{
+echo -e "Querying AD provider list..."
+declare -a adslist=( $(isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
+echo -e "Done, continuing.\n"
+PS3="Enter Selection: "
+select user_sloc in "${adslist[@]}"; do
+  valid_opt="true"
+  break;
+done
+} # }}} End prompt_sloc2
 
 prompt_stype(){ # {{{
 valid_stype="false"
@@ -202,8 +218,7 @@ while [[ "${valid_stype}" = "false" ]]; do
     ;;
   esac
 done
-}
-# }}} End prompt_search
+} # }}} End prompt_search
 
 search_logs(){ # {{{
 search_range="$(( epoch_edate - epoch_sdate ))"
