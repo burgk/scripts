@@ -8,14 +8,14 @@ dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5]
 efisilogdate="1450015382" # Earliest date on EFX400 Isilon
 curdate="$(date +%s)"
 local_os="$(uname -o)"
-outfile="/ifs/${curdate}_log.out"
+# outfile="/ifs/${curdate}_log.out"
 nodecount="$(ls /ifs/.ifsvar/audit/logs | wc -l)"
 # zcat <nodelog.gz> | sed -e /s/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip > filter.gz
 # }}}
 
 # Functions {{{
 
-prompt_start() { # {{{
+prompt_stime(){ # {{{ Prompt for and do basic validation on supplied start date
 valid_sdate="false"
 while [ "${valid_sdate}" = "false" ]; do
   echo -n "Enter start date in the format YYYY-MM-DD HH:MM  "
@@ -46,10 +46,9 @@ while [ "${valid_sdate}" = "false" ]; do
     echo -e "Invalid date entered"
   fi
 done
-}
-# }}} End prompt_start
+} # }}} End prompt_stime
 
-prompt_end(){ # {{{
+prompt_etime(){ # {{{ Prompt for and do basic validation on supplied end date
 valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
   echo -n "Enter end date in the format YYYY-MM-DD HH:MM  "
@@ -80,10 +79,9 @@ while [ "${valid_edate}" = "false" ]; do
     fi
   fi
 done
-}
-# }}} End prompt_end
+} # }}} End prompt_etime
 
-prompt_sloc(){ # {{{
+prompt_sloc(){ # {{{ Static Menu for AD/Zone param setting
 # echo -e "Loading AD Provider list... Please wait"
 # declare -a adslist=( $( isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
 # echo -e "Done. Continuing\n"
@@ -173,7 +171,7 @@ while [[ "${valid_sloc}" = "false" ]]; do
 done
 } # }}} End prompt_sloc
 
-prompt_sloc2(){ #{{{
+prompt_sloc2(){ #{{{ IN PROGRESS - build dynamic AD/Zone pairing for prompt
 echo -e "Querying AD provider list..."
 declare -a adslist=( $(isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
 echo -e "Done, continuing.\n"
@@ -184,7 +182,7 @@ select user_sloc in "${adslist[@]}"; do
 done
 } # }}} End prompt_sloc2
 
-prompt_stype(){ # {{{
+prompt_stype(){ # {{{ Prompt for search type: User or Path
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n"
@@ -220,7 +218,7 @@ while [[ "${valid_stype}" = "false" ]]; do
 done
 } # }}} End prompt_search
 
-search_logs(){ # {{{
+generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in /ifs
 search_range="$(( epoch_edate - epoch_sdate ))"
 if [[ "${search_range}" -gt "86400" ]]; then
   echo -e "Notice: Search range is greater than 1 day, this may be slow"
@@ -228,15 +226,24 @@ else
   echo -e "Notice: Search range is less than 1 day"
 fi
 if [[ "${local_os}" = *inux* ]]; then
-  echo -e "-->  ISILON audit view command runs here  <--"
+  echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
-  isi_for_array -s "isi_audit_viewer -t protocol -s ${user_sdate} -e ${user_edate}" > "${outfile}"
+  for (( count=0; count < nodecount; count++)); do
+    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" | gzip  > /ifs/node-"${count}"_auditlog.gz
+  done
 fi
 
-}
-# }}} End search_logs
+} # }}} End generate_logs
 
-create_share(){ # {{{
+resolve_sid(){ #{{{ Takes a sid as argument and resolves it as res_user
+res_user="$(isi auth users view --zone="${user_zone}" --sid="$@" | grep -w "Name:" | cut -d" " -f2)"
+} # End resolve_sid }}}
+
+parse_log(){ # {{{ Pull out relevant parts of audit record for formatting
+:
+} # }}} End parse_log
+
+create_share(){ # {{{ EXPERIMENTAL generic share creation
 echo -e "Share will be created with Everyone - Full Control SMB permissions"
 read -p -r -e "Share Access Zone: " user_shareaz
 read -p -r -e "Share name: " user_sharename
@@ -244,15 +251,14 @@ read -p -r -e "Share description: " user_sharedescription
 read -p -r -e "Share path: " user_sharepath
 isi smb shares create "${user_sharename}" "${user_sharepath}" --create-path --description="${user_sharedescription}" --zone="${user_shareaz}" 
 isi smb shares permission "${user_sharename}" --wellknown Everyone --permission full --zone="${user_shareaz}"
-}
-# }}} End create share
+} # }}} End create share
 
 # }}} End functions section
 
 # Begin main tasks  {{{
-prompt_start
-prompt_end
-search_logs
+prompt_stime
+prompt_etime
+generate_logs
 prompt_sloc
 prompt_stype
 echo -e "\nStart is: ${user_sdate}"
