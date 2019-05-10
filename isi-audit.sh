@@ -5,11 +5,11 @@
 
 # Misc variable definitions {{{
 dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5][0-9])$'
-efisilogdate="1450015382" # Earliest date on EFX400 Isilon
+efx400logdate="1450388912" # Earliest date on EFX400 Isilon - Thu Dec 17 14:48:32 MST 2015
 curdate="$(date +%s)"
 local_os="$(uname -o)"
 # outfile="/ifs/${curdate}_log.out"
-nodecount="$(ls /ifs/.ifsvar/audit/logs | wc -l)"
+nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)"
 # zcat <nodelog.gz> | sed -e /s/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip > filter.gz
 # }}}
 
@@ -25,7 +25,7 @@ while [ "${valid_sdate}" = "false" ]; do
   elif [[ "${local_os}" = *inux* ]]; then
     if [[ $(date --date="${user_sdate}" +%s 2>/dev/null) ]]; then # Linux date format
       epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
-        if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
+        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
           echo -e "Error: Date is out of range"
         else
           valid_sdate="true"
@@ -36,7 +36,7 @@ while [ "${valid_sdate}" = "false" ]; do
   elif [[ "${local_os}" != *inux* ]]; then
     if [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
       epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
-        if [[ "${epoch_sdate}" -lt "${efisilogdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
+        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${curdate}" ]]; then
           echo -e "Error: Date is out of range"
         else
           valid_sdate="true"
@@ -182,9 +182,7 @@ prompt_stype(){ # {{{ Prompt for search type: User or Path - vars: user_stype, u
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n"
-  echo -n "Will this search be for a [U]ser or [P]ath: "
-#  read -rp "Will this search be for a [U]ser or [P]ath: " user_tmptype
-  read -e -r user_tmptype
+  read -rp "Will this search be for a [U]ser or [P]ath: " user_tmptype
   case "${user_tmptype}" in
     u | U)
       user_stype="User"
@@ -202,10 +200,11 @@ while [[ "${valid_stype}" = "false" ]]; do
     p | P)
       user_stype="Path"
       echo -e "Enter the path with the format of"
-      printf "%s\n" '\\ifs\<accesszone>\path\to\search'
-      echo -n "What is the full path to search: "
-      read -e -r user_spath
-      search_param="${user_spath}"
+      printf "%s\n" '\ifs\<accesszone>\path\to\search'
+      echo -e "Partial paths are ok, but will increase the"
+      echo -e "number of matches. Wildcards are not necessary"
+      read -rp "What is the path to search: " user_spath
+      search_param="${user_spath//\\/\\\\\\\\}"
       valid_stype="true"
     ;;
     *)
@@ -218,17 +217,18 @@ done
 } # }}} End prompt_search
 
 generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in /ifs - outfile is /ifs/node-<#>_log.gz
-search_range="$(( epoch_edate - epoch_sdate ))"
-if [[ "${search_range}" -gt "86400" ]]; then
-  echo -e "Notice: Search range is greater than 1 day, this may be slow"
-else
-  echo -e "Notice: Search range is less than 1 day"
-fi
+# search_range="$(( epoch_edate - epoch_sdate ))"
+# if [[ "${search_range}" -gt "86400" ]]; then
+#   echo -e "Notice: Search range is greater than 1 day, this may be slow"
+# else
+#   echo -e "Notice: Search range is less than 1 day"
+# fi
 if [[ "${local_os}" = *inux* ]]; then
   echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
   for (( count=1; count < nodecount; count++)); do
-    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" | grep "${search_param}" | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip  > /ifs/node-"${count}"_log.gz
+    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
+    | grep -i "${search_param}" | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip  > /ifs/node-"${count}"_log.gz
   done
 fi
 
