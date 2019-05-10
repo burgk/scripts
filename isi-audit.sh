@@ -15,7 +15,7 @@ nodecount="$(ls /ifs/.ifsvar/audit/logs | wc -l)"
 
 # Functions {{{
 
-prompt_stime(){ # {{{ Prompt for and do basic validation on supplied start date
+prompt_stime(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
 valid_sdate="false"
 while [ "${valid_sdate}" = "false" ]; do
   echo -n "Enter start date in the format YYYY-MM-DD HH:MM  "
@@ -48,7 +48,7 @@ while [ "${valid_sdate}" = "false" ]; do
 done
 } # }}} End prompt_stime
 
-prompt_etime(){ # {{{ Prompt for and do basic validation on supplied end date
+prompt_etime(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
 valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
   echo -n "Enter end date in the format YYYY-MM-DD HH:MM  "
@@ -81,11 +81,7 @@ while [ "${valid_edate}" = "false" ]; do
 done
 } # }}} End prompt_etime
 
-prompt_sloc(){ # {{{ Static Menu for AD/Zone param setting
-# echo -e "Loading AD Provider list... Please wait"
-# declare -a adslist=( $( isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
-# echo -e "Done. Continuing\n"
-
+prompt_sloc(){ # {{{ Static Menu for AD/Zone param setting - vars: user_sloc, user_zone, user_ad
 valid_sloc="false"
 while [[ "${valid_sloc}" = "false" ]]; do
   echo -e "\nAvailable AD domains / Access zones to search are:"
@@ -182,15 +178,15 @@ select user_sloc in "${adslist[@]}"; do
 done
 } # }}} End prompt_sloc2
 
-prompt_stype(){ # {{{ Prompt for search type: User or Path
+prompt_stype(){ # {{{ Prompt for search type: User or Path - vars: user_stype, user_sid, user_spath, search_param
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n"
   echo -n "Will this search be for a [U]ser or [P]ath: "
+#  read -rp "Will this search be for a [U]ser or [P]ath: " user_tmptype
   read -e -r user_tmptype
   case "${user_tmptype}" in
     u | U)
-      valid_stype="true"
       user_stype="User"
       echo -n "What is the Windows AD user id to search: "
       read -e -r user_suser
@@ -200,14 +196,17 @@ while [[ "${valid_stype}" = "false" ]]; do
         echo -e "--> Isilon command to lookup user SID runs here <--"
         user_sid="IsilonCommandWouldPutTheSIDHere"
       fi
+      search_param="${user_sid}"
+      valid_stype="true"
     ;;
     p | P)
-      valid_stype="true"
       user_stype="Path"
       echo -e "Enter the path with the format of"
       printf "%s\n" '\\ifs\<accesszone>\path\to\search'
       echo -n "What is the full path to search: "
       read -e -r user_spath
+      search_param="${user_spath}"
+      valid_stype="true"
     ;;
     *)
       echo -e "Error: Invalid choice, please type:"
@@ -218,7 +217,7 @@ while [[ "${valid_stype}" = "false" ]]; do
 done
 } # }}} End prompt_search
 
-generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in /ifs
+generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in /ifs - outfile is /ifs/node-<#>_log.gz
 search_range="$(( epoch_edate - epoch_sdate ))"
 if [[ "${search_range}" -gt "86400" ]]; then
   echo -e "Notice: Search range is greater than 1 day, this may be slow"
@@ -228,8 +227,8 @@ fi
 if [[ "${local_os}" = *inux* ]]; then
   echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
-  for (( count=0; count < nodecount; count++)); do
-    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" | gzip  > /ifs/node-"${count}"_auditlog.gz
+  for (( count=1; count < nodecount; count++)); do
+    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" | grep "${search_param}" | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip  > /ifs/node-"${count}"_log.gz
   done
 fi
 
