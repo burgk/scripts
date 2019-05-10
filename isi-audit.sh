@@ -234,7 +234,7 @@ fi
 
 } # }}} End generate_logs
 
-resolve_sid(){ #{{{ Takes a sid as argument and resolves it as res_user
+resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
 res_user="$(isi auth users view --zone="${user_zone}" --sid="$@" | grep -w "Name:" | cut -d" " -f2)"
 } # End resolve_sid }}}
 
