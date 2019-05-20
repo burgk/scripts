@@ -202,7 +202,11 @@ while [[ "${valid_stype}" = "false" ]]; do
       echo -e "Enter the path with the format of"
       printf "%s\n" '\ifs\<accesszone>\path\to\search'
       echo -e "Partial paths are ok, but will increase the"
-      echo -e "number of matches. Wildcards are not necessary"
+      echo -e "number of matches. Wildcards are not necessary."
+      echo -e "Also, remember the share we are searching"
+      echo -e "will need to be translated to an Isilon path,"
+      echo -e "so a partial path in your access zone should"
+      echo -e "be fine."
       read -rp "What is the path to search: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
       valid_stype="true"
