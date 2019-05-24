@@ -169,7 +169,7 @@ done
 
 prompt_sloc2(){ #{{{ IN PROGRESS - build dynamic AD/Zone pairing for prompt
 echo -e "Querying AD provider list..."
-declare -a adslist=( $(isi auth ads list --no-header --no-footer | grep online | cut -d" " -f1) )
+declare -a adslist=( $(isi auth ads list -a -z | grep online | cut -d" " -f1) )
 echo -e "Done, continuing.\n"
 PS3="Enter Selection: "
 select user_sloc in "${adslist[@]}"; do
@@ -235,6 +235,8 @@ generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in /ifs
 if [[ "${local_os}" = *inux* ]]; then
   echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
+  echo -e "${search_param}"
+  echo -e "Generating logs..."
   for (( count=1; count < nodecount; count++)); do
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
     | grep -i "${search_param}" | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" | gzip  > /ifs/node-"${count}"_log.gz
@@ -266,9 +268,9 @@ isi smb shares permission "${user_sharename}" --wellknown Everyone --permission 
 # Begin main tasks  {{{
 prompt_stime
 prompt_etime
-generate_logs
 prompt_sloc
 prompt_stype
+generate_logs
 echo -e "\nStart is: ${user_sdate}"
 echo -e "End is: ${user_edate}"
 echo -e "Search size is: ${search_range}"
