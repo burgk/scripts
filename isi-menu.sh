@@ -8,6 +8,8 @@
 ts=$(date +%s)
 mkdir /ifs/iao-"${ts}"
 iaopath="/ifs/iao-${ts}" # isi-audit output path
+PS3="Enter selection: "
+
 # }}}
 
 # Function definitions {{{
@@ -15,13 +17,13 @@ iaopath="/ifs/iao-${ts}" # isi-audit output path
 # }}}
 
 # Begin main tasks {{{
-echo -e "Generate Access Zone info for cluster.."
+echo -e "Generate Access Zone list for cluster.."
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
 for i in "${!az_list[@]}"; do
   touch "${iaopath}/${az_list[$i]}"
 done
-echo -e "Get AD domains for Access Zones.."
+echo -e "Get AD providers for Access Zones.."
 cd "${iaopath}" || exit
 for file  in *; do
   if [[ $(isi zone zones view "${file}" | grep -Eo '(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})') =~ (([[:upper:]]{1,}\.){1,}[[:upper:]]{1,}) ]]; then
@@ -40,7 +42,6 @@ done
 declare -a agency=()
 cd "${iaopath}"/online || exit
 agency=( * )
-PS3="Enter selection: "
 echo -e "Select the online AD provider Access Zone are we searching:"
 echo -e "Enter 99 to quit instead"
 select file in "${agency[@]%,*}"; do
