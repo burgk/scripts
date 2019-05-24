@@ -10,7 +10,7 @@
 
 # Function definitions {{{
 
-# )))
+# }}}
 
 # Begin main tasks {{{
 echo -e "Generate Access Zone info for cluster.."
