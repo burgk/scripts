@@ -5,7 +5,9 @@
 
 # Misc variable definitions {{{
 # set -x # Enable debug
-
+ts=$(date +%s)
+mkdir /ifs/iao-"${ts}"
+iaopath="/ifs/iao-${ts}" # isi-audit output path
 # }}}
 
 # Function definitions {{{
@@ -16,27 +18,41 @@
 echo -e "Generate Access Zone info for cluster.."
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
-declare -a ads_list=()
-echo -e "whole az_list array: ${az_list[@]}"
-echo -e "size of array: ${#az_list[@]}"
-echo -e "element 0: ${az_list[0]}"
-echo -e "element 1: ${az_list[1]}"
-echo -e "element 2: ${az_list[2]}"
-echo -e "Generating AD provider list for discovered Access Zone.."
-for agency in "${az_list[@]}"; do
-  adspresent=$( isi zone zones view "${agency}" | grep -Eo '(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' )
-  if [[ "${adspresent}" =~ (([[:upper:]]{1,}\.){1,}[[:upper:]]{1,}) ]]; then
-    while read -r line; do ads_list+=("$line"); done < <( isi zone zones view "${agency}" | grep -Eo '(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' )
-  else
-    echo -e "No AD provider for ${agency}"
+for i in "${!az_list[@]}"; do
+  touch "${iaopath}/${az_list[$i]}"
+done
+echo -e "Get AD domains for Access Zones.."
+cd "${iaopath}" || exit
+for file  in *; do
+  if [[ $(isi zone zones view "${file}" | grep -Eo '(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})') =~ (([[:upper:]]{1,}\.){1,}[[:upper:]]{1,}) ]]; then
+    mv "${file}" "${file}",$(isi zone zones view "${file}" | grep -Eo '(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})');
   fi
 done
-echo -e "whole array: ${ads_list[@]}"
-echo -e "size of array: ${#ads_list[@]}"
-echo -e "element 0: ${ads_list[0]}"
-echo -e "element 1: ${ads_list[1]}"
-echo -e "element 2: ${ads_list[2]}"
-echo -e "element 3: ${ads_list[3]}"
+echo -e "Find online AD providers, please wait.."
+mkdir "${iaopath}"/online
+cd "${iaopath}" || exit
+for file in *,*; do
+  # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then
+  if [[ $(isi auth status | grep  "${file##*,}" | grep -o online) == "online" ]]; then
+    mv "${file}" ./online/
+  fi
+done
+declare -a agency=()
+cd "${iaopath}"/online || exit
+agency=( * )
+PS3="Enter selection: "
+echo -e "Select the online AD provider Access Zone are we searching:"
+echo -e "Enter 99 to quit instead"
+select file in "${agency[@]%,*}"; do
+  if [[ "${file}" == "99" ]]; then
+    echo -e "99 selected, cleaning up.."
+    rm -rf /ifs/"${iaopath}"
+    exit 0
+  else
+    echo "${file}"
+    break
+  fi
+done
 # }}}
 
 exit 0
