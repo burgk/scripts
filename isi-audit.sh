@@ -33,7 +33,9 @@ HEADERMSG
 prompt_stime(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
 valid_sdate="false"
 while [ "${valid_sdate}" = "false" ]; do
-  echo -e "\n"
+  echo -e "\n*************************"
+  echo -e "**  SEARCH TIME ENTRY  **"
+  echo -e "*************************"
   read -rep "Enter start date in the format YYYY-MM-DD HH:MM: " user_sdate
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
@@ -99,7 +101,9 @@ prompt_sloc(){ #{{{ Dynamic AD/Zone pairing - vars: user_zone, user_ad, zone_pat
 if ! [[ -e "${iaopath}" ]]; then
   mkdir "${iaopath}"
 fi
-echo -e "\n"
+echo -e "\n*****************************"
+echo -e "**  SEARCH LOCATION ENTRY  **"
+echo -e "*****************************"
 echo -e "--> Building Access Zone list for cluster.. <--"
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
@@ -129,7 +133,7 @@ cd "${iaopath}"/online || exit
 agency=( * )
 valid_sloc="false"
 while [ "${valid_sloc}" == "false" ]; do
-  echo -e "\nSelect the Access Zone - AD Provider are we searching:"
+  echo -e "\nSelect the Access Zone - AD Provider are we searching:\n"
   arrsize="${#agency[@]}"
   for ((count=0; count < arrsize; count++)); do
     echo -e "[$((count + 1))] ${agency[$count]}"
@@ -149,9 +153,12 @@ while [ "${valid_sloc}" == "false" ]; do
 done
 } # }}} End prompt_sloc
 
-prompt_stype(){ # {{{ Prompt for search type: User or Path - vars: user_stype, user_sid, user_spath, search_param
+prompt_stype(){ # {{{ Prompt for search type: User or Path - vars: user_stype, user_suser, user_sid, user_spath, search_param
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
+  echo -e "\n*************************"
+  echo -e "**  SEARCH TYPE ENTRY  **"
+  echo -e "*************************"
   read -rp "Will this search be for a [U]ser or [P]ath: " user_tmptype
   case "${user_tmptype}" in
     u | U)
@@ -203,12 +210,31 @@ PATHMESSAGE
 done
 } # }}} End prompt_search
 
+show_selections(){ # {{{ Display input and get user confirmation - vars: user_agree
+user_agree="n"
+echo -e "\nYou entered:\n"
+echo -e "Start date/time: ${user_sdate}"
+echo -e "End date/time: ${user_edate}"
+echo -e "Search location: ${user_zone} - ${user_ad}"
+if [[ "${user_stype}" == "User" ]]; then
+  echo -e "Search type: ${user_stype} - ${user_suser}"
+else
+  echo -e "Search type: ${user_stype} - ${search_param}"
+fi
+echo -n "Do your entries look correct [y|n]: "
+read -r user_agree
+} # }}} End show_selections
+
 generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node-<#>_log.gz
 if [[ "${local_os}" = *inux* ]]; then
   echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
+  echo -e "\n**********************************"
+  echo -e "**  LOG GENERATION - FILTERING  **"
+  echo -e "**********************************"
   echo -e "Generating logs, please wait.."
   for (( count=1; count < nodecount; count++)); do
+    echo -e "--> Collecting logs from node ${count}.. <--"
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
     | grep "${zone_path}" \
     | grep -i "${search_param}" \
@@ -225,71 +251,49 @@ res_user="$(isi auth users view --zone="${user_zone}" --sid="$@" | grep -w "Name
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Pull out relevant parts of audit record for formatting
-echo -e "Parsing of logs happens here.."
+echo -e "\n********************************"
+echo -e "**  LOG PARSING - FORMATTING  **"
+echo -e "********************************"
 } # }}} End parse_log
 
 # }}} End functions section
 
 # Begin main tasks  {{{
 show_header
-user_confirm="false"
-while [ "${user_confirm}" == false ]; do
-  prompt_stime
-  prompt_etime
-  prompt_sloc
-  prompt_stype
-  echo -e "\nStart date/time is: ${user_sdate}"
-  echo -e "End date/time is: ${user_edate}"
-  echo -e "Search type is: ${user_stype}"
-  echo -e "Search location is: ${user_zone}"
-  if [[ "${user_stype}" = "User" ]]; then
-    echo -e "Search criteria: ${user_suser}"
-  else
-    echo "Search criteria: ${search_param}"
-  fi
-  read -rep "Do these search criteria look correct [y|n]? " user_confirm_response
-  case "${user_confirm_response}" in
-    y | Y)
-    echo -e "Ok, continuing.."
-    generate_logs
-    parse_log
-    user_confirm="true"
+prompt_stime
+prompt_etime
+prompt_sloc
+prompt_stype
+show_selections
+while [ "${user_agree}" == "n" ]; do
+  echo -e "\nWhich entry would you like to change?"
+  echo -e "[1] Start date/time"
+  echo -e "[2] End date/time"
+  echo -e "[3] Search location"
+  echo -e "[4] Search type"
+  read -rep "Enter selection: " user_change
+  case "${user_change}" in
+    1)
+    prompt_stime
+    show_selections
     ;;
-    n | N)
-    echo -e "\nOk, which item needs changed?"
-    echo -e "[1] Start date/time"
-    echo -e "[2] End date/time"
-    echo -e "[3] Search location"
-    echo -e "[4] Search type"
-    read -rep "Enter selection: " redo_function
-    case "${redo_function}" in
-      1)
-      prompt_stime
-      continue
-      ;;
-      2)
-      prompt_etime
-      continue
-      ;;
-      3)
-      prompt_sloc
-      continue
-      ;;
-      4)
-      prompt_stype
-      continue
-      ;;
-      *)
-      echo -e "Error: Invalid response selected"
-      ;;
-    esac
+    2)
+    prompt_etime
+    show_selections
     ;;
-    *)
-    echo -e " Error: Invalid response selected"
+    3)
+    prompt_sloc
+    show_selections
+    ;;
+    4)
+    prompt_stype
+    show_selections
     ;;
   esac
 done
-echo -e "Complete"
+echo -e "User entries have been confirmed, continuing.."
+generate_logs
+parse_log
 # }}}
 
 exit 0
