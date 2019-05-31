@@ -17,8 +17,8 @@ while true; do
   echo "Enter 2 to show calendar 2: "
   echo "Enter q to exit the menu q: "
   echo -e "\n"
-  echo -e "Enter your selection \c"
-  read -r answer
+  read -rep "Enter your selection: " answer
+#  read -r answer
   case "${answer}" in
     1)
       who
