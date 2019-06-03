@@ -12,6 +12,7 @@ ts=$(date +%s) # time stamp
 local_os="$(uname -o)" # only needed when testing on linux
 nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
 iaopath="/ifs/iao-${ts}" # isi-audit output path
+time_count="0"
 # }}}
 
 # Functions {{{
@@ -30,74 +31,81 @@ cat <<'HEADERMSG'
 HEADERMSG
 } # }}} End display_header
 
-prompt_stime(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
+prompt_sdate(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
 valid_sdate="false"
+echo -e "\n*************************"
+echo -e "**  SEARCH TIME ENTRY  **"
+echo -e "*************************"
 while [ "${valid_sdate}" = "false" ]; do
-  echo -e "\n*************************"
-  echo -e "**  SEARCH TIME ENTRY  **"
-  echo -e "*************************"
+  echo -e "time_count: ${time_count}"
   read -rep "Enter start date in the format YYYY-MM-DD HH:MM: " user_sdate
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-  elif [[ "${local_os}" = *inux* ]]; then
-    if [[ $(date --date="${user_sdate}" +%s 2>/dev/null) ]]; then # Linux date format
-      epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
-        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-          echo -e "Error: Date is out of range"
-        else
-          valid_sdate="true"
-        fi
-    else
-      echo -e "Error: Invalid date"
-    fi
-  elif [[ "${local_os}" != *inux* ]]; then
-    if [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
-      epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
-        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-          echo -e "Error: Date is out of range"
-        else
-          valid_sdate="true"
-        fi
-    fi
+#  elif [[ "${local_os}" = *inux* ]]; then
+#    if [[ $(date --date="${user_sdate}" +%s 2>/dev/null) ]]; then # Linux date format
+#      epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
+#        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
+#          echo -e "Error: Date is out of range"
+#        else
+#          valid_sdate="true"
+#        fi
+#    else
+#      echo -e "Error: Invalid date"
+#    fi
+#  elif [[ "${local_os}" != *inux* ]]; then
+   elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
+     epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
+       if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
+         echo -e "Error: Date is out of range"
+       elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -lt "${epoch_edate}" ]]; then
+         valid_sdate="true"
+       elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -ge "${epoch_edate}" ]]; then
+         echo -e "Warning: Start time is after end time!"
+         echo -e "If you need to adjust both, please adjust end time first."
+       else
+         valid_sdate="true"
+       fi
+#    fi
   else
     echo -e "Invalid date entered"
   fi
 done
-} # }}} End prompt_stime
+} # }}} End prompt_sdate
 
-prompt_etime(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
+prompt_edate(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
 valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
   read -rep "Enter end date in the format YYYY-MM-DD HH:MM: " user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
     echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-  elif [[ "${local_os}" = *inux* ]]; then
-    if [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
-      epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
-        if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-          echo -e "Error: Date is out of range"
-        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-          echo -e "Error: Start date is before end date"
-        else
-          valid_edate="true"
-        fi
-    fi
-  elif [[ "${local_os}" != *inux* ]]; then
-    if [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
-      epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
-        if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-          echo -e "Error: End date is in the future"
-        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-          echo -e "Error: End date is before start date"
-        else
-          valid_edate="true"
-        fi
-    fi
+#  elif [[ "${local_os}" = *inux* ]]; then
+#    if [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
+#      epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
+#        if [[ "${epoch_edate}" -gt "${ts}" ]]; then
+#          echo -e "Error: Date is out of range"
+#        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
+#          echo -e "Error: Start date is before end date"
+#        else
+#          valid_edate="true"
+#        fi
+#    fi
+#  elif [[ "${local_os}" != *inux* ]]; then
+  elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
+    epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
+      if [[ "${epoch_edate}" -gt "${ts}" ]]; then
+        echo -e "Error: End date is in the future"
+      elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
+        echo -e "Error: End date is before start date"
+      else
+        valid_edate="true"
+      fi
   fi
+#  fi
 done
-} # }}} End prompt_etime
+((time_count++))
+} # }}} End prompt_edate
 
-prompt_sloc(){ #{{{ Dynamic AD/Zone pairing - vars: user_zone, user_ad, zone_path
+build_sloc(){ # {{{ Build search location data structure
 if ! [[ -e "${iaopath}" ]]; then
   mkdir "${iaopath}"
 fi
@@ -128,6 +136,9 @@ for file in *-*; do
     mv "${file}" ./online/
   fi
 done
+} # }}} End build_sloc
+
+prompt_sloc(){ #{{{ Dynamic AD/Zone pairing - vars: user_zone, user_ad, zone_path
 declare -a agency=()
 cd "${iaopath}"/online || exit
 agency=( * )
@@ -138,6 +149,7 @@ while [ "${valid_sloc}" == "false" ]; do
   for ((count=0; count < arrsize; count++)); do
     echo -e "[$((count + 1))] ${agency[$count]}"
   done
+  echo "\n"
   read -rep "Enter number of selection: " user_tmp
   if [[ "${user_tmp}" =~ $azregex ]] && [[ "${user_tmp}" -le "${arrsize}" ]]; then
     user_sloc=$((user_tmp - 1))
@@ -260,8 +272,9 @@ echo -e "********************************"
 
 # Begin main tasks  {{{
 show_header
-prompt_stime
-prompt_etime
+prompt_sdate
+prompt_edate
+build_sloc
 prompt_sloc
 prompt_stype
 show_selections
@@ -274,11 +287,11 @@ while [ "${user_agree}" == "n" ]; do
   read -rep "Enter selection: " user_change
   case "${user_change}" in
     1)
-    prompt_stime
+    prompt_sdate
     show_selections
     ;;
     2)
-    prompt_etime
+    prompt_edate
     show_selections
     ;;
     3)
