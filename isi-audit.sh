@@ -222,7 +222,12 @@ else
   echo -e "\n**********************************"
   echo -e "**  LOG GENERATION - FILTERING  **"
   echo -e "**********************************"
-  echo -e "Generating logs, please wait.."
+  echo -e "This is generally the slowest part of this"
+  echo -e "operation as we are waiting for the Isilon"
+  echo -e "to retrieve all the records and may take a"
+  echo -e "significant amount of time depending on how"
+  echo -e "large the search range is."
+  echo -e "\nGenerating logs, please wait.."
   for (( count=1; count < nodecount; count++)); do
     echo -e "--> Collecting logs from node ${count}.. <--"
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
@@ -243,7 +248,10 @@ parse_log(){ # {{{ Pull out relevant parts of audit record for formatting
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
-
+declare -a loglist
+cd "${iaopath}" || exit
+loglist=( *.gz )
+echo -e "${loglist[@]}"
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
@@ -264,11 +272,22 @@ comp_clean(){ # {{{ Clean up after successful run
 echo -e "\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
-echo -e "Log files have been left in ${iaopath}"
-echo -e "Please remove them if they are no longer needed"
-rm -rf "${iaopath}"/online
-rm -rf "${iaopath}"/users
-rm -rf "${iaopath}"*-*
+cd "${iaopath}" || exit
+rm -rf ./online
+rm -rf ./users
+rm -rf ./*-*
+rm -rf ./*.gz
+tar cvfz "${ts}"_AuditResults.csv.gz ./*.csv 2>/dev/null
+rm -rf ./*.csv
+cd "${HOME}" || exit
+echo -e "The Audit result files have been saved in ${iaopath}"
+echo -e "as a compressed tar file. You will need"
+echo -e "to copy it to your local system.  Once there,"
+echo -e "it needs to be uncompressed and un-archived."
+echo -e "Then, it can be imported as a '>' delimited"
+echo -e "file in Excel."
+echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
+echo -e "after you have collected the results file."
 } # }}} End comp_cleanup
 
 # Begin main tasks  {{{
