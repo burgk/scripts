@@ -4,6 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
+trap "int_clean" 2 3
 dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5][0-9])$' # date format regex
 zoneregex='(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' # regex that matches the domain provider
 azregex='[[:digit:]]{1,}' # search location option regex
@@ -37,37 +38,24 @@ echo -e "\n*************************"
 echo -e "**  SEARCH TIME ENTRY  **"
 echo -e "*************************"
 while [ "${valid_sdate}" = "false" ]; do
-  echo -e "time_count: ${time_count}"
   read -rep "Enter start date in the format YYYY-MM-DD HH:MM: " user_sdate
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
-    echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-#  elif [[ "${local_os}" = *inux* ]]; then
-#    if [[ $(date --date="${user_sdate}" +%s 2>/dev/null) ]]; then # Linux date format
-#      epoch_sdate="$(date --date="${user_sdate}" +%s)" # Linux date format
-#        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-#          echo -e "Error: Date is out of range"
-#        else
-#          valid_sdate="true"
-#        fi
-#    else
-#      echo -e "Error: Invalid date"
-#    fi
-#  elif [[ "${local_os}" != *inux* ]]; then
+    echo -e "ERROR: Invalid date format, need YYYY-MM-DD HH:MM"
    elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
      epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-         echo -e "Error: Date is out of range"
+         echo -e "ERROR: Date is out of range"
        elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -lt "${epoch_edate}" ]]; then
          valid_sdate="true"
        elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -ge "${epoch_edate}" ]]; then
-         echo -e "Warning: Start time is after end time!"
+         echo -e "ERROR: Start time is newer than end time!"
          echo -e "If you need to adjust both, please adjust end time first."
        else
          valid_sdate="true"
        fi
 #    fi
   else
-    echo -e "Invalid date entered"
+    echo -e "ERROR: Invalid date entered"
   fi
 done
 } # }}} End prompt_sdate
@@ -77,25 +65,13 @@ valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
   read -rep "Enter end date in the format YYYY-MM-DD HH:MM: " user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
-    echo -e "Invalid date format, need YYYY-MM-DD HH:MM"
-#  elif [[ "${local_os}" = *inux* ]]; then
-#    if [[ $(date --date="${user_edate}" +%s) ]]; then # Linux date format
-#      epoch_edate="$(date --date="${user_edate}" +%s)" # Linux date format
-#        if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-#          echo -e "Error: Date is out of range"
-#        elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-#          echo -e "Error: Start date is before end date"
-#        else
-#          valid_edate="true"
-#        fi
-#    fi
-#  elif [[ "${local_os}" != *inux* ]]; then
+    echo -e "ERROR: Invalid date format, need YYYY-MM-DD HH:MM"
   elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
     epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
       if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-        echo -e "Error: End date is in the future"
+        echo -e "ERROR: End date is in the future"
       elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-        echo -e "Error: End date is before start date"
+        echo -e "ERROR: End date is before start date"
       else
         valid_edate="true"
       fi
@@ -128,7 +104,7 @@ done
 if ! [[ -e "${iaopath}"/online ]]; then
   mkdir "${iaopath}"/online
 fi
-echo -e "--> Finding online AD providers, please wait.. <--"
+echo -e "--> Finding online AD providers.. <--"
 cd "${iaopath}" || exit
 for file in *-*; do
   # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # more accurate, but significantly slower
@@ -149,7 +125,7 @@ while [ "${valid_sloc}" == "false" ]; do
   for ((count=0; count < arrsize; count++)); do
     echo -e "[$((count + 1))] ${agency[$count]}"
   done
-  echo "\n"
+  echo -e "\n"
   read -rep "Enter number of selection: " user_tmp
   if [[ "${user_tmp}" =~ $azregex ]] && [[ "${user_tmp}" -le "${arrsize}" ]]; then
     user_sloc=$((user_tmp - 1))
@@ -160,7 +136,7 @@ while [ "${valid_sloc}" == "false" ]; do
     zone_path="${tmp_path//\\/\\\\\\\\}"
     valid_sloc="true"
   else
-    echo -e "Invalid selection"
+    echo -e "ERROR: Invalid selection"
   fi
 done
 } # }}} End prompt_sloc
@@ -181,8 +157,10 @@ while [[ "${valid_stype}" = "false" ]]; do
         if [[ "${local_os}" != *inux* ]]; then
           user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
           if [[ "${#user_sid}" == "0" ]]; then
-            echo -e "User not found, please re-enter\n"
+            echo -e "ERROR: User not found, please re-enter\n"
           else
+            mkdir "${iaopath}"/users || exit
+            touch "${iaopath}"/users/"${user_suser}_${user_sid}"
             valid_user="true"
           fi
         else
@@ -214,7 +192,7 @@ PATHMESSAGE
       valid_stype="true"
     ;;
     *)
-      echo -e "Error: Invalid choice, please type:"
+      echo -e "ERROR: Invalid choice, please type:"
       echo -e "u | U for a user based search"
       echo -e "p | P for a directory based search"
     ;;
@@ -233,11 +211,11 @@ if [[ "${user_stype}" == "User" ]]; then
 else
   echo -e "Search type: ${user_stype} - ${search_param}"
 fi
-echo -n "Do your entries look correct [y|n]: "
+echo -n "\nDo your entries look correct [y|n]: "
 read -r user_agree
 } # }}} End show_selections
 
-generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node-<#>_log.gz
+generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node_<#>_log.gz
 if [[ "${local_os}" = *inux* ]]; then
   echo -e "-->  isi_audit_viewer loop runs here  <--"
 else
@@ -252,10 +230,9 @@ else
     | grep -i "${search_param}" \
     | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" \
     | gzip \
-    > "${iaopath}"/node-"${count}"_log.gz
+    > "${iaopath}"/node_"${count}"_log.gz
   done
 fi
-
 } # }}} End generate_logs
 
 resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
@@ -266,9 +243,33 @@ parse_log(){ # {{{ Pull out relevant parts of audit record for formatting
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
+
 } # }}} End parse_log
 
+int_clean(){ # {{{ Clean up on Ctrl-C
+echo -e "\n*****************************************"
+echo -e "**  NOTICE: Interrupt signal detected  **"
+echo -e "*****************************************"
+echo -e "--> Cleaning up <--"
+if [[ -e "${iaopath}" ]]; then
+  rm -rf "${iaopath}"
+fi
+echo -e "--> Done <--"
+exit 1
+} # End cleanup
+
 # }}} End functions section
+
+comp_clean(){ # {{{ Clean up after successful run
+echo -e "\n***************************"
+echo -e "**  PROCESSING COMPLETE  **"
+echo -e "***************************"
+echo -e "Log files have been left in ${iaopath}"
+echo -e "Please remove them if they are no longer needed"
+rm -rf "${iaopath}"/online
+rm -rf "${iaopath}"/users
+rm -rf "${iaopath}"*-*
+} # }}} End comp_cleanup
 
 # Begin main tasks  {{{
 show_header
@@ -307,6 +308,8 @@ done
 echo -e "User entries have been confirmed, continuing.."
 generate_logs
 parse_log
+comp_clean
+
 # }}}
 
 exit 0
