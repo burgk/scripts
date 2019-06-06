@@ -10,6 +10,7 @@ zoneregex='(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' # regex that matches the do
 azregex='[[:digit:]]{1,}' # search location option regex
 efx400logdate="1450388912" # Earliest date on EFX400 Isilon - Thu Dec 17 14:48:32 MST 2015
 ts=$(date +%s) # time stamp
+hts=$(date +%Y-%m-%d)
 local_os="$(uname -o)" # only needed when testing on linux
 nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
 iaopath="/ifs/iao-${ts}" # isi-audit output path
@@ -29,6 +30,18 @@ cat <<'HEADERMSG'
 ** /_/  |_\__,_/\__,_/_/\__/   \____/\__/_/_/_/\__/\__, /   **
 **                                                /____/    **
 **************************************************************
+
+This utility functions as a wrapper around the isi_audit_viewer
+command on Isilon.  It will prompt for the search criteria and
+then collect the logs from each node for the times indicated.
+Once the logs have been collected, it will parse and format 
+them for importing into Excel as a '>' (greater than symbol)
+delimited file.
+Some of the steps it performs may take a significant amount of
+time as we wait for the Isilon to pull out all the log files.
+If your search duration is more than a few days, you may want
+to stop and re-run this script from inside a screen session so
+you can detach and let it run in the background.
 HEADERMSG
 } # }}} End display_header
 
@@ -141,13 +154,13 @@ while [ "${valid_sloc}" == "false" ]; do
 done
 } # }}} End prompt_sloc
 
-prompt_stype(){ # {{{ Prompt for search type: User or Path - vars: user_stype, user_suser, user_sid, user_spath, search_param
+prompt_stype(){ # {{{ Prompt for search type: User, Path or Delete - vars: user_stype, user_suser, user_sid, user_spath, search_param, path_arg
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n*************************"
   echo -e "**  SEARCH TYPE ENTRY  **"
   echo -e "*************************"
-  read -rp "Will this search be for a [U]ser or [P]ath: " user_tmptype
+  read -rp "Will this search be for a [U]ser, [P]ath or [D]eletion: " user_tmptype
   case "${user_tmptype}" in
     u | U)
       user_stype="User"
@@ -160,7 +173,7 @@ while [[ "${valid_stype}" = "false" ]]; do
             echo -e "ERROR: User not found, please re-enter\n"
           else
             mkdir "${iaopath}"/users || exit
-            touch "${iaopath}"/users/"${user_suser}_${user_sid}"
+            touch "${iaopath}"/users/"${user_suser}-${user_sid}"
             valid_user="true"
           fi
         else
@@ -169,6 +182,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         fi
       done
       search_param="${user_sid}"
+      path_arg="all"
       valid_stype="true"
     ;;
     p | P)
@@ -189,6 +203,20 @@ may be several 'New Text Document.txt' in any given agency.
 PATHMESSAGE
       read -rep "What is the file, directory or path to search: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
+      path_arg="all"
+      valid_stype="true"
+    ;;
+    d |D)
+      user_stype="Delete"
+      echo -e "\n"
+      cat <<'DELMESSAGE'
+For a deletion search, we'll need the name of the file or
+directory as if it were a [P]ath search, but the script
+will filter the output to *only* pull out delete event types.
+DELMESSAGE
+      read -rep "What is the file or directory we are searching for: " user_spath
+      search_param="${user_spath//\\/\\\\\\\\}"
+      path_arg="delete"
       valid_stype="true"
     ;;
     *)
@@ -208,11 +236,11 @@ echo -e "End date/time: ${user_edate}"
 echo -e "Search location: ${user_zone} - ${user_ad}"
 if [[ "${user_stype}" == "User" ]]; then
   echo -e "Search type: ${user_stype} - ${user_suser}"
-else
+else 
   echo -e "Search type: ${user_stype} - ${search_param}"
 fi
-echo -n "\nDo your entries look correct [y|n]: "
-read -r user_agree
+echo -e "\n"
+read -rep "Do your entries look correct [y|n]: " user_agree
 } # }}} End show_selections
 
 generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node_<#>_log.gz
@@ -244,14 +272,59 @@ resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
 res_user="$(isi auth users view --zone="${user_zone}" --sid="$@" | grep -w "Name:" | cut -d" " -f2)"
 } # End resolve_sid }}}
 
-parse_log(){ # {{{ Pull out relevant parts of audit record for formatting
+parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
 declare -a loglist
 cd "${iaopath}" || exit
+echo -e "--> Removing empty logs <--\n"
+for file in *.gz; do
+  if [[ $(ls -l "${file}" | awk -F" " '{ print $5 }') == "20" ]]; then
+    rm "${file}"
+  fi
+done
 loglist=( *.gz )
-echo -e "${loglist[@]}"
+if [[ "${1}" == "all" ]]; then
+  for i in "${!loglist[@]}"; do
+    echo -e "--> Parsing logs from ${loglist[$i]} <--"
+    zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
+    if ( $7 == "eventType:create" ) print $1,$7,$8,$9,$15,"NA for Event",$11,$13 ;
+    else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
+    else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp
+  done
+elif [[ "${1}" == "delete" ]]; then
+  for i in "${!loglist[@]}"; do
+    echo -e "--> Parsing logs from ${loglist[$i]} <--"
+    zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
+    if ( $7 == "eventType:delete" ) print $1,$7,$8,$10,$9,$11 ; }' \
+    >> "${loglist[$i]%.*}".tmp
+  done
+fi
+declare -a audres_list
+audres_list=( *.tmp )
+echo -e "\n"
+if [[ "${1}" == "all" ]]; then
+  for i in "${!audres_list[@]}"; do
+    echo "Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name" > "${audres_list[$i]%.*}".csv
+  done
+elif [[ "${1}" == "delete" ]]; then
+  for i in "${!audres_list[@]}"; do
+    echo "Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name" > "${audres_list[$i]%.*}".csv
+  done
+fi
+for i in "${!audres_list[@]}"; do
+  echo -e "--> Formatting records from ${audres_list[$i]} <--"
+  cat "${audres_list[$i]}" \
+  | sed -nE 's/[[[:digit:]]{1,}: //gp' \
+  | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
+  | sed -nE 's/>[[:alpha:]]{1,}:/>/gp' \
+  | sed -nE 's/\\\\/\\/gp' \
+  >> "${audres_list[$i]%.*}".csv
+done
+for file in *.csv; do
+  mv "${file}" "${file/log/result}"
+done
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
@@ -277,7 +350,8 @@ rm -rf ./online
 rm -rf ./users
 rm -rf ./*-*
 rm -rf ./*.gz
-tar cvfz "${ts}"_AuditResults.csv.gz ./*.csv 2>/dev/null
+rm -rf ./*.tmp
+tar cfz "${hts}"_AuditResults.tar.gz ./*.csv 2>/dev/null
 rm -rf ./*.csv
 cd "${HOME}" || exit
 echo -e "The Audit result files have been saved in ${iaopath}"
@@ -292,43 +366,56 @@ echo -e "after you have collected the results file."
 
 # Begin main tasks  {{{
 show_header
-prompt_sdate
-prompt_edate
-build_sloc
-prompt_sloc
-prompt_stype
-show_selections
-while [ "${user_agree}" == "n" ]; do
-  echo -e "\nWhich entry would you like to change?"
-  echo -e "[1] Start date/time"
-  echo -e "[2] End date/time"
-  echo -e "[3] Search location"
-  echo -e "[4] Search type"
-  read -rep "Enter selection: " user_change
-  case "${user_change}" in
-    1)
-    prompt_sdate
-    show_selections
-    ;;
-    2)
-    prompt_edate
-    show_selections
-    ;;
-    3)
-    prompt_sloc
-    show_selections
-    ;;
-    4)
-    prompt_stype
-    show_selections
-    ;;
-  esac
-done
-echo -e "User entries have been confirmed, continuing.."
-generate_logs
-parse_log
-comp_clean
-
+read -rep "Do you want to continue? [y|n]: " user_cont
+case "${user_cont}" in
+  y | Y)
+  prompt_sdate
+  prompt_edate
+  build_sloc
+  prompt_sloc
+  prompt_stype
+  show_selections
+  while [ "${user_agree}" == "n" ]; do
+    echo -e "\nWhich entry would you like to change?"
+    echo -e "[1] Start date/time"
+    echo -e "[2] End date/time"
+    echo -e "[3] Search location"
+    echo -e "[4] Search type"
+    read -rep "Enter selection: " user_change
+    case "${user_change}" in
+      1)
+      prompt_sdate
+      show_selections
+      ;;
+      2)
+      prompt_edate
+      show_selections
+      ;;
+      3)
+      prompt_sloc
+      show_selections
+      ;;
+      4)
+      prompt_stype
+      show_selections
+      ;;
+    esac
+  done
+  echo -e "\n--> User entries have been confirmed, continuing.. <--"
+  generate_logs
+  parse_log "${path_arg}"
+  comp_clean
+  exit 0
+  ;;
+  n | N)
+    echo -e "Ok, exiting."
+    exit 0
+  ;;
+  *)
+    echo -e "ERROR: Invalid Entry"
+    exit 1
+  ;;
+esac
 # }}}
 
 exit 0
