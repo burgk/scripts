@@ -421,7 +421,7 @@ case "${user_cont}" in
   done
   echo -e "\n--> User entries have been confirmed, continuing.. <--"
   generate_logs
-  if [[ $(ls "${iaopath}"/*.gz) ]]; then
+  if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
     parse_log "${path_arg}"
     comp_clean
   else
