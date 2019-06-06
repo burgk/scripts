@@ -104,11 +104,11 @@ echo -e "*****************************"
 echo -e "--> Building Access Zone list for cluster.. <--"
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
+cd "${iaopath}" || exit
 for i in "${!az_list[@]}"; do
-  touch "${iaopath}/${az_list[$i]}"
+  touch ./"${az_list[$i]}"
 done
 echo -e "--> Getting AD providers for Access Zones.. <--"
-cd "${iaopath}" || exit
 for file  in *; do
   if [[ $(isi zone zones view "${file}" | grep -Eo "${zoneregex}") =~ $zoneregex ]]; then
     mv "${file}" "${file} - "$(isi zone zones view "${file}" | grep -Eo "${zoneregex}");
@@ -118,11 +118,15 @@ if ! [[ -e "${iaopath}"/online ]]; then
   mkdir "${iaopath}"/online
 fi
 echo -e "--> Finding online AD providers.. <--"
-cd "${iaopath}" || exit
 for file in *-*; do
   # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # more accurate, but significantly slower
   if [[ $(isi auth status | grep  "${file##* - }" | grep -o online) == "online" ]]; then
     mv "${file}" ./online/
+  fi
+done
+for file in *; do
+  if [[ -f "${file}" ]]; then
+    rm -f "${file}"
   fi
 done
 } # }}} End build_sloc
@@ -244,28 +248,32 @@ read -rep "Do your entries look correct [y|n]: " user_agree
 } # }}} End show_selections
 
 generate_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node_<#>_log.gz
-if [[ "${local_os}" = *inux* ]]; then
-  echo -e "-->  isi_audit_viewer loop runs here  <--"
-else
-  echo -e "\n**********************************"
-  echo -e "**  LOG GENERATION - FILTERING  **"
-  echo -e "**********************************"
-  echo -e "This is generally the slowest part of this"
-  echo -e "operation as we are waiting for the Isilon"
-  echo -e "to retrieve all the records and may take a"
-  echo -e "significant amount of time depending on how"
-  echo -e "large the search range is."
-  echo -e "\nGenerating logs, please wait.."
-  for (( count=1; count < nodecount; count++)); do
-    echo -e "--> Collecting logs from node ${count}.. <--"
-    isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
-    | grep "${zone_path}" \
-    | grep -i "${search_param}" \
-    | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" \
-    | gzip \
-    > "${iaopath}"/node_"${count}"_log.gz
-  done
-fi
+echo -e "\n**********************************"
+echo -e "**  LOG GENERATION - FILTERING  **"
+echo -e "**********************************"
+echo -e "This is generally the slowest part of this"
+echo -e "operation as we are waiting for the Isilon"
+echo -e "to retrieve all the records and may take a"
+echo -e "significant amount of time depending on how"
+echo -e "large the search range is."
+echo -e "\nGenerating logs, please wait.."
+for (( count=1; count < nodecount; count++)); do
+  echo -e "--> Collecting logs from node ${count}.. <--"
+  isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
+  | grep "${zone_path}" \
+  | grep -i "${search_param}" \
+  | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" \
+  | gzip \
+  > "${iaopath}"/node_"${count}"_log.gz
+done
+
+cd "${iaopath}" || exit
+echo -e "--> Removing empty logs <--\n"
+for file in *.gz; do
+  if [[ $(ls -l "${file}" | awk -F" " '{ print $5 }') == "20" ]]; then
+    rm "${file}"
+  fi
+done
 } # }}} End generate_logs
 
 resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
@@ -277,13 +285,6 @@ echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
 declare -a loglist
-cd "${iaopath}" || exit
-echo -e "--> Removing empty logs <--\n"
-for file in *.gz; do
-  if [[ $(ls -l "${file}" | awk -F" " '{ print $5 }') == "20" ]]; then
-    rm "${file}"
-  fi
-done
 loglist=( *.gz )
 if [[ "${1}" == "all" ]]; then
   for i in "${!loglist[@]}"; do
@@ -301,6 +302,7 @@ elif [[ "${1}" == "delete" ]]; then
     >> "${loglist[$i]%.*}".tmp
   done
 fi
+
 declare -a audres_list
 audres_list=( *.tmp )
 echo -e "\n"
@@ -331,15 +333,28 @@ int_clean(){ # {{{ Clean up on Ctrl-C
 echo -e "\n*****************************************"
 echo -e "**  NOTICE: Interrupt signal detected  **"
 echo -e "*****************************************"
+echo -e "--> User abort - Cleaning up <--"
+if [[ -e "${iaopath}" ]]; then
+  rm -rf "${iaopath}"
+fi
+echo -e "--> Done <--"
+exit 
+} # }}} End int_clean
+
+nd_clean(){ # {{{ Clean up after no data run
+echo -e "\n*******************************"
+echo -e "**  NOTICE: No data matched  **"
+echo -e "*******************************"
+echo -e "Unfortunately, no data matched the search"
+echo -e "criteria provided. If this was a path search"
+echo -e "there may have been path elements missing."
 echo -e "--> Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
 echo -e "--> Done <--"
-exit 1
-} # End cleanup
-
-# }}} End functions section
+exit 0
+} # }}} End nd_clean
 
 comp_clean(){ # {{{ Clean up after successful run
 echo -e "\n***************************"
@@ -362,7 +377,10 @@ echo -e "Then, it can be imported as a '>' delimited"
 echo -e "file in Excel."
 echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
 echo -e "after you have collected the results file."
+exit 0
 } # }}} End comp_cleanup
+
+# }}} End functions section
 
 # Begin main tasks  {{{
 show_header
@@ -403,9 +421,12 @@ case "${user_cont}" in
   done
   echo -e "\n--> User entries have been confirmed, continuing.. <--"
   generate_logs
-  parse_log "${path_arg}"
-  comp_clean
-  exit 0
+  if [[ $(ls "${iaopath}"/*.gz) ]]; then
+    parse_log "${path_arg}"
+    comp_clean
+  else
+    nd_clean
+  fi
   ;;
   n | N)
     echo -e "Ok, exiting."
@@ -416,6 +437,4 @@ case "${user_cont}" in
     exit 1
   ;;
 esac
-# }}}
-
-exit 0
+# }}} End main tasks
