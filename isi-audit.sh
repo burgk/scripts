@@ -471,7 +471,6 @@ case "${user_cont}" in
   generate_logs
   if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
     parse_log "${path_arg}"
-    read -p "press enter to continue"
     comp_clean
   else
     nd_clean
