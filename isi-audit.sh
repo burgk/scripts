@@ -8,10 +8,10 @@ trap "int_clean" 2 3
 dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5][0-9])$' # date format regex
 zoneregex='(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' # regex that matches the domain provider
 azregex='[[:digit:]]{1,}' # search location option regex
+sidregex='S-[[:digit:]]-[[:digit:]]-([[:digit:]]{1,}-){1,}[[:digit:]]{1,}'
 efx400logdate="1450388912" # Earliest date on EFX400 Isilon - Thu Dec 17 14:48:32 MST 2015
 ts=$(date +%s) # time stamp
 hts=$(date +%Y-%m-%d)
-local_os="$(uname -o)" # only needed when testing on linux
 nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
 iaopath="/ifs/iao-${ts}" # isi-audit output path
 time_count="0"
@@ -108,12 +108,14 @@ cd "${iaopath}" || exit
 for i in "${!az_list[@]}"; do
   touch ./"${az_list[$i]}"
 done
+
 echo -e "--> Getting AD providers for Access Zones.. <--"
 for file  in *; do
   if [[ $(isi zone zones view "${file}" | grep -Eo "${zoneregex}") =~ $zoneregex ]]; then
     mv "${file}" "${file} - "$(isi zone zones view "${file}" | grep -Eo "${zoneregex}");
   fi
 done
+
 if ! [[ -e "${iaopath}"/online ]]; then
   mkdir "${iaopath}"/online
 fi
@@ -124,6 +126,7 @@ for file in *-*; do
     mv "${file}" ./online/
   fi
 done
+
 for file in *; do
   if [[ -f "${file}" ]]; then
     rm -f "${file}"
@@ -164,25 +167,20 @@ while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n*************************"
   echo -e "**  SEARCH TYPE ENTRY  **"
   echo -e "*************************"
-  read -rp "Will this search be for a [U]ser, [P]ath or [D]eletion: " user_tmptype
+  read -rep "Will this search be for a [U]ser, [P]ath or [D]eletion: " user_tmptype
   case "${user_tmptype}" in
     u | U)
       user_stype="User"
       valid_user="false"
       while [ "${valid_user}" == "false" ]; do
         read -rep "What is the Windows AD user id to search in ${user_ad}: " user_suser
-        if [[ "${local_os}" != *inux* ]]; then
-          user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
-          if [[ "${#user_sid}" == "0" ]]; then
-            echo -e "ERROR: User not found, please re-enter\n"
-          else
-            mkdir "${iaopath}"/users || exit
-            touch "${iaopath}"/users/"${user_suser}-${user_sid}"
-            valid_user="true"
-          fi
+        user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
+        if [[ "${#user_sid}" == "0" ]]; then
+          echo -e "ERROR: User not found, please re-enter\n"
         else
-          echo -e "--> Isilon command to lookup user SID runs here <--"
-          user_sid="IsilonCommandWouldPutTheSIDHere"
+          mkdir "${iaopath}"/user || exit
+          touch "${iaopath}"/user/"${user_suser}_${user_sid}"
+          valid_user="true"
         fi
       done
       search_param="${user_sid}"
@@ -217,6 +215,7 @@ PATHMESSAGE
 For a deletion search, we'll need the name of the file or
 directory as if it were a [P]ath search, but the script
 will filter the output to *only* pull out delete event types.
+
 DELMESSAGE
       read -rep "What is the file or directory we are searching for: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
@@ -255,8 +254,7 @@ echo -e "This is generally the slowest part of this"
 echo -e "operation as we are waiting for the Isilon"
 echo -e "to retrieve all the records and may take a"
 echo -e "significant amount of time depending on how"
-echo -e "large the search range is."
-echo -e "\nGenerating logs, please wait.."
+echo -e "large the search range is.\n"
 for (( count=1; count < nodecount; count++)); do
   echo -e "--> Collecting logs from node ${count}.. <--"
   isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
@@ -268,7 +266,7 @@ for (( count=1; count < nodecount; count++)); do
 done
 
 cd "${iaopath}" || exit
-echo -e "--> Removing empty logs <--\n"
+echo -e "--> Removing empty logs after filter.. <--\n"
 for file in *.gz; do
   if [[ $(ls -l "${file}" | awk -F" " '{ print $5 }') == "20" ]]; then
     rm "${file}"
@@ -277,56 +275,105 @@ done
 } # }}} End generate_logs
 
 resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
-res_user="$(isi auth users view --zone="${user_zone}" --sid="$@" | grep -w "Name:" | cut -d" " -f2)"
+if [[ -e "${iaopath}"/user ]]; then
+  cd "${iaopath}"/user || exit
+else
+  mkdir "${iaopath}"/user
+  cd "${iaopath}"/user || exit
+fi
+res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
+touch ./"${res_user}"_"$1"
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
+cd "${iaopath}" || exit
 declare -a loglist
-loglist=( *.gz )
+loglist=( *.gz ) # in iaopath
 if [[ "${1}" == "all" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Parsing logs from ${loglist[$i]} <--"
+    echo -e "--> Pulling relevant records from ${loglist[$i]}.. <--"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:create" ) print $1,$7,$8,$9,$15,"NA for Event",$11,$13 ;
     else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
-    else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp
+    else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp1
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Parsing logs from ${loglist[$i]} <--"
+    echo -e "--> Pulling delete events from ${loglist[$i]}.. <--"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:delete" ) print $1,$7,$8,$10,$9,$11 ; }' \
-    >> "${loglist[$i]%.*}".tmp
+    >> "${loglist[$i]%.*}".tmp1
   done
 fi
 
+cd "${iaopath}" || exit
 declare -a audres_list
-audres_list=( *.tmp )
+audres_list=( *.tmp1 )
 echo -e "\n"
 if [[ "${1}" == "all" ]]; then
   for i in "${!audres_list[@]}"; do
-    echo "Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name" > "${audres_list[$i]%.*}".csv
+    echo "Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name" > "${audres_list[$i]%.*}".tmp2
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!audres_list[@]}"; do
-    echo "Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name" > "${audres_list[$i]%.*}".csv
+    echo "Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name" > "${audres_list[$i]%.*}".tmp2
   done
 fi
 for i in "${!audres_list[@]}"; do
-  echo -e "--> Formatting records from ${audres_list[$i]} <--"
+  echo -e "--> Formatting records from ${audres_list[$i]}.. <--"
   cat "${audres_list[$i]}" \
   | sed -nE 's/[[[:digit:]]{1,}: //gp' \
   | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
   | sed -nE 's/>[[:alpha:]]{1,}:/>/gp' \
   | sed -nE 's/\\\\/\\/gp' \
-  >> "${audres_list[$i]%.*}".csv
+  >> "${audres_list[$i]%.*}".tmp2
 done
+rm -f ./*.tmp1
+
+cd "${iaopath}" || exit
+if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
+  echo -e "--> Building SID list.. <--"
+  for file in *.tmp2; do
+    grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
+    sort ./sidlist.tmp | uniq > ./sidlist
+    rm ./sidlist.tmp
+  done
+  sidcount=$(wc -l ./sidlist | awk -F" " '{ print $1 }')
+  count=1
+  while read -r SID; do
+    echo -e "--> Resolving SID ${count} of ${sidcount}.. <--"
+    resolve_sid "${SID}"
+    (( count++ ))
+  done < ./sidlist
+fi
+
+cd "${iaopath}"/user || exit
+for log in ../*.tmp2; do
+  echo -e "--> Updating records with UserID.. <--"
+  for user in *; do
+    sid="${user#*_}"
+    name="${user%_*}"
+    sed -nE "s/${sid}/${name/\\/ - }/gp" "${log}" >> "${log%.*}".tmp3
+  done
+done
+
+cd "${iaopath}" || exit
+for file2 in ./*.tmp2; do
+  header=$(head -n1 "${file2}")
+  for file3 in ./*.tmp3; do
+    echo -E "${header}" > "${file2%.*}".csv
+    cat "${file3}" >> "${file2%.*}".csv
+  done
+done
+rm -f "${iaopath}"/*.tmp?
+
 for file in *.csv; do
   mv "${file}" "${file/log/result}"
 done
+
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
@@ -337,7 +384,7 @@ echo -e "--> User abort - Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done <--"
+echo -e "--> Done - Goodbye <--"
 exit 
 } # }}} End int_clean
 
@@ -352,7 +399,7 @@ echo -e "--> Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done <--"
+echo -e "--> Done - Goodbye <--"
 exit 0
 } # }}} End nd_clean
 
@@ -361,13 +408,14 @@ echo -e "\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
 cd "${iaopath}" || exit
-rm -rf ./online
-rm -rf ./users
-rm -rf ./*-*
-rm -rf ./*.gz
-rm -rf ./*.tmp
+rm -rf ./online 2>/dev/null
+rm -rf ./user 2>/dev/null
+rm -rf ./*-* 2>/dev/null
+rm -rf ./*.gz 2>/dev/null
+rm -rf ./*.tmp* 2>/dev/null
+rm -rf ./sidlist 2>/dev/null
 tar cfz "${hts}"_AuditResults.tar.gz ./*.csv 2>/dev/null
-rm -rf ./*.csv
+rm -rf ./*.csv 2>/dev/null
 cd "${HOME}" || exit
 echo -e "The Audit result files have been saved in ${iaopath}"
 echo -e "as a compressed tar file. You will need"
@@ -376,7 +424,7 @@ echo -e "it needs to be uncompressed and un-archived."
 echo -e "Then, it can be imported as a '>' delimited"
 echo -e "file in Excel."
 echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
-echo -e "after you have collected the results file."
+echo -e "after you have collected the results file.\n"
 exit 0
 } # }}} End comp_cleanup
 
@@ -423,6 +471,7 @@ case "${user_cont}" in
   generate_logs
   if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
     parse_log "${path_arg}"
+    read -p "press enter to continue"
     comp_clean
   else
     nd_clean
