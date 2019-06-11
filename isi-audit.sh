@@ -13,6 +13,7 @@ efx400logdate="1450388912" # Earliest date on EFX400 Isilon - Thu Dec 17 14:48:3
 ts=$(date +%s) # time stamp
 hts=$(date +%Y-%m-%d)
 nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
+realnodecount=$((nodecount - 1))
 iaopath="/ifs/iao-${ts}" # isi-audit output path
 time_count="0"
 # }}}
@@ -255,18 +256,21 @@ echo -e "operation as we are waiting for the Isilon"
 echo -e "to retrieve all the records and may take a"
 echo -e "significant amount of time depending on how"
 echo -e "large the search range is.\n"
+cd "${iaopath}" || exit
 for (( count=1; count < nodecount; count++)); do
-  echo -e "--> Collecting logs from node ${count}.. <--"
+  echo -e "--> Collecting logs from node ${count} of ${realnodecount}.. <--"
   isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
   | grep "${zone_path}" \
   | grep -i "${search_param}" \
   | sed -e 's/,"/\>/g' | tr -d "\"" | tr -d "{}" \
   | gzip \
   > "${iaopath}"/node_"${count}"_log.gz
+  rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
+  echo -e "-->   Log contains ${rec_count_1} records <--"
 done
 
 cd "${iaopath}" || exit
-echo -e "--> Removing empty logs after filter.. <--\n"
+echo -e "--> Removing empty logs after filtering.. <--\n"
 for file in *.gz; do
   if [[ $(ls -l "${file}" | awk -F" " '{ print $5 }') == "20" ]]; then
     rm "${file}"
@@ -294,18 +298,22 @@ declare -a loglist
 loglist=( *.gz ) # in iaopath
 if [[ "${1}" == "all" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Pulling relevant records from ${loglist[$i]}.. <--"
+    echo -e "--> Pulling relevant fields from ${loglist[$i]%.*}.. <--"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:create" ) print $1,$7,$8,$9,$15,"NA for Event",$11,$13 ;
     else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
     else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp1
+    rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
+    echo -e "-->   Log contains ${rec_count_2} records <--"
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Pulling delete events from ${loglist[$i]}.. <--"
+    echo -e "--> Pulling delete events from ${loglist[$i]%.*}.. <--"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:delete" ) print $1,$7,$8,$10,$9,$11 ; }' \
     >> "${loglist[$i]%.*}".tmp1
+    rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
+    echo -e "-->   Log contains ${rec_count_2} records <--"
   done
 fi
 
@@ -313,17 +321,19 @@ cd "${iaopath}" || exit
 declare -a audres_list
 audres_list=( *.tmp1 )
 echo -e "\n"
-if [[ "${1}" == "all" ]]; then
-  for i in "${!audres_list[@]}"; do
-    echo "Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name" > "${audres_list[$i]%.*}".tmp2
-  done
-elif [[ "${1}" == "delete" ]]; then
-  for i in "${!audres_list[@]}"; do
-    echo "Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name" > "${audres_list[$i]%.*}".tmp2
-  done
-fi
+#if [[ "${1}" == "all" ]]; then
+#  for i in "${!audres_list[@]}"; do
+#    header="Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name"
+   # echo "Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name" > ./header #"${audres_list[$i]%.*}".tmp2 #DEBUG
+#  done
+#elif [[ "${1}" == "delete" ]]; then
+#  for i in "${!audres_list[@]}"; do
+#    header="Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name"
+    # echo "Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name" > ./header #"${audres_list[$i]%.*}".tmp2 #DEBUG
+#  done
+#fi
 for i in "${!audres_list[@]}"; do
-  echo -e "--> Formatting records from ${audres_list[$i]}.. <--"
+  echo -e "--> Formatting fields from ${audres_list[$i]%.*}.. <--"
   cat "${audres_list[$i]}" \
   | sed -nE 's/[[[:digit:]]{1,}: //gp' \
   | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
@@ -333,14 +343,15 @@ for i in "${!audres_list[@]}"; do
 done
 rm -f ./*.tmp1
 
+read -p "pause before building sidlist" #DEBUG
 cd "${iaopath}" || exit
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   echo -e "--> Building SID list.. <--"
   for file in *.tmp2; do
     grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
-    sort ./sidlist.tmp | uniq > ./sidlist
-    rm ./sidlist.tmp
   done
+  sort ./sidlist.tmp | uniq > ./sidlist
+  rm ./sidlist.tmp
   sidcount=$(wc -l ./sidlist | awk -F" " '{ print $1 }')
   count=1
   while read -r SID; do
@@ -350,6 +361,7 @@ if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   done < ./sidlist
 fi
 
+read -p "pause before updating userid" #DEBUG
 cd "${iaopath}"/user || exit
 for log in ../*.tmp2; do
   echo -e "--> Updating records with UserID.. <--"
@@ -359,16 +371,23 @@ for log in ../*.tmp2; do
     sed -nE "s/${sid}/${name/\\/ - }/gp" "${log}" >> "${log%.*}".tmp3
   done
 done
+rm -f ./*.tmp2
 
+read -p "pause before adding header" #DEBUG
 cd "${iaopath}" || exit
-for file2 in ./*.tmp2; do
-  header=$(head -n1 "${file2}")
-  for file3 in ./*.tmp3; do
-    echo -E "${header}" > "${file2%.*}".csv
-    cat "${file3}" >> "${file2%.*}".csv
-  done
+if [[ "${1}" == "all" ]]; then
+  header="Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name"
+elif [[ "${1}" == "delete" ]]; then
+  header="Time Stamp>Event Type>Is Directory>Filename>Client IP>User Name"
+fi
+declare -a headerlist
+headerlist=( *.tmp3 )
+for i in "${!headerlist[@]}"; do
+  echo "${header}" > "${headerlist[$i]%.*}".csv
+  cat "${headerlist[$i]}" >> "${headerlist[$i]%.*}".csv
 done
-rm -f "${iaopath}"/*.tmp?
+#rm -f "${iaopath}"/*.tmp3 #DEBUG
+#rm -f ./header #DEBUG
 
 for file in *.csv; do
   mv "${file}" "${file/log/result}"
@@ -471,6 +490,7 @@ case "${user_cont}" in
   generate_logs
   if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
     parse_log "${path_arg}"
+    read -p "Press Enter to continue.." #DEBUG
     comp_clean
   else
     nd_clean
