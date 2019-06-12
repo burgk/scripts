@@ -900,7 +900,7 @@ else
 fi
 } #}}}
 
-# BEGIN PROCESSING
+# Begin main tasks {{{
 check_root
 get_distro
 get_distroversion
@@ -940,4 +940,5 @@ else
   echo -e "${f_red}Unrecognized command line argument, exiting${reset}"
   exit 1
 fi
+# }}} End main tasks
 exit 0
