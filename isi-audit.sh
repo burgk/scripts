@@ -274,10 +274,10 @@ for (( count=1; count < nodecount; count++)); do
     > "${iaopath}"/node_"${count}"_log.gz
   rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
   if [[ "${rec_count_1}" == "0" ]]; then
-    echo -e "-->   Log contained ${rec_count_1} raw records, removing.. <--"
+    echo -e "-->   Log contained ${rec_count_1} records, removing.. <--"
     rm node_"${count}"_log.gz
   else
-    echo -e "-->   Log contains ${rec_count_1} records <--"
+    echo -e "-->   Log contains ${rec_count_1} raw records <--"
   fi
 done
 
