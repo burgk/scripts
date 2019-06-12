@@ -454,9 +454,11 @@ exit 0
 
 # Begin main tasks  {{{
 show_header
-read -rep "Do you want to continue? [y|n]: " user_cont
-case "${user_cont}" in
-  y | Y)
+user_cont=""
+until [[ "${user_cont}" == [yY] || "${user_cont}" == [nN] ]]; do
+  read -rep "Do you want to continue? [y|n]: " user_cont
+done
+if [[ "${user_cont}" == [yY] ]]; then 
   prompt_sdate
   prompt_edate
   build_sloc
@@ -497,15 +499,8 @@ case "${user_cont}" in
   else
     nd_clean
   fi
-  ;;
-  n | N)
-    echo -e "Ok, exiting."
-    exit 0
-  ;;
-  *)
-    echo -e "ERROR: Invalid Entry"
-    exit 1
-  ;;
-esac
-
+else
+  echo -e "Ok, exiting."
+  exit 0
+fi
 # }}} End main tasks
