@@ -97,7 +97,7 @@ done
 
 build_sloc(){ # {{{ Build search location data structure
 if ! [[ -e "${iaopath}" ]]; then
-  mkdir "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}"
+  mkdir "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}"
 fi
 echo -e "\n*****************************"
 echo -e "**  SEARCH LOCATION ENTRY  **"
@@ -105,7 +105,7 @@ echo -e "*****************************"
 echo -e "--> Building Access Zone list for cluster.. <--"
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for i in "${!az_list[@]}"; do
   touch ./"${az_list[$i]}"
 done
@@ -118,7 +118,7 @@ for file  in ./*; do
 done
 
 if ! [[ -e "${iaopath}"/online ]]; then
-  mkdir "${iaopath}"/online || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/online"
+  mkdir "${iaopath}"/online 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/online"
 fi
 echo -e "--> Finding online AD providers.. <--"
 for file in ./*-*; do
@@ -137,7 +137,7 @@ done
 
 prompt_sloc(){ #{{{ Dynamic AD/Zone pairing - vars: user_zone, user_ad, zone_path
 declare -a agency=()
-cd "${iaopath}"/online || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/online"
+cd "${iaopath}"/online 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/online"
 agency=( * )
 valid_sloc="false"
 while [ "${valid_sloc}" == "false" ]; do
@@ -179,7 +179,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         if [[ "${#user_sid}" == "0" ]]; then
           echo -e "ERROR: User not found, please re-enter\n"
         else
-          mkdir "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
+          mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
           touch "${iaopath}"/user/"${user_suser}_${user_sid}"
           valid_user="true"
         fi
@@ -256,7 +256,7 @@ echo -e "operation as we are waiting for the Isilon"
 echo -e "to retrieve all the records and may take a"
 echo -e "significant amount of time depending on how"
 echo -e "large the search range is.\n"
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for (( count=1; count < nodecount; count++)); do
   echo -e "--> Collecting logs from node ${count} of ${realnodecount}.. <--"
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
@@ -277,10 +277,10 @@ done
 
 resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
 if [[ -e "${iaopath}"/user ]]; then
-  cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
+  cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 else
-  mkdir "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
-  cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
+  mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
+  cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 fi
 res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
 touch ./"${res_user}"_"$1"
@@ -290,7 +290,7 @@ parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv f
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a loglist
 loglist=( *.gz )
 if [[ "${1}" == "all" ]]; then
@@ -319,7 +319,7 @@ elif [[ "${1}" == "delete" ]]; then
   done
 fi
 
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a audres_list
 audres_list=( *.tmp1 )
 echo -e "\n"
@@ -334,7 +334,7 @@ for i in "${!audres_list[@]}"; do
 done
 rm -f ./*.tmp1
 
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   echo -e "--> Building SID list.. <--"
   for file in ./*.tmp2; do
@@ -351,7 +351,7 @@ if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   done < ./sidlist
 fi
 
-cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
+cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 for log in ../*.tmp2; do
   echo -e "--> Updating records with UserID.. <--"
   for user in *; do
@@ -362,7 +362,7 @@ for log in ../*.tmp2; do
 done
 rm -f ./*.tmp2
 
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${1}" == "all" ]]; then
   header="Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name"
 elif [[ "${1}" == "delete" ]]; then
@@ -415,7 +415,7 @@ comp_clean(){ # {{{ Clean up after successful run
 echo -e "\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
-cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 rm -rf ./online 2>/dev/null
 rm -rf ./user 2>/dev/null
 rm -rf ./*-* 2>/dev/null
@@ -424,7 +424,7 @@ rm -rf ./*.tmp* 2>/dev/null
 rm -rf ./sidlist 2>/dev/null
 tar cfz "${hts}"_AuditResults.tar.gz ./*.csv 2>/dev/null
 rm -rf ./*.csv 2>/dev/null
-cd "${HOME}" || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
+cd "${HOME}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
 echo -e "The Audit result file(s) have been saved as:"
 echo -e "\n${iaopath}/${hts}_AuditResults.tar.gz\n"
 echo -e "which is a compressed tar archive."
