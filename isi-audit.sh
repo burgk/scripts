@@ -44,7 +44,6 @@ If your search duration is more than a few days, you may want
 to stop and re-run this script from inside a screen session so
 you can detach and let it run in the background.
 HEADERMSG
-
 } # }}} End display_header
 
 prompt_sdate(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
@@ -73,7 +72,6 @@ while [ "${valid_sdate}" = "false" ]; do
     echo -e "ERROR: Invalid date entered"
   fi
 done
-
 } # }}} End prompt_sdate
 
 prompt_edate(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
@@ -95,12 +93,11 @@ while [ "${valid_edate}" = "false" ]; do
 #  fi
 done
 ((time_count++))
-
 } # }}} End prompt_edate
 
 build_sloc(){ # {{{ Build search location data structure
 if ! [[ -e "${iaopath}" ]]; then
-  mkdir "${iaopath}"
+  mkdir "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}"
 fi
 echo -e "\n*****************************"
 echo -e "**  SEARCH LOCATION ENTRY  **"
@@ -108,40 +105,39 @@ echo -e "*****************************"
 echo -e "--> Building Access Zone list for cluster.. <--"
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for i in "${!az_list[@]}"; do
   touch ./"${az_list[$i]}"
 done
 
 echo -e "--> Getting AD providers for Access Zones.. <--"
-for file  in *; do
+for file  in ./*; do
   if [[ $(isi zone zones view "${file}" | grep -Eo "${zoneregex}") =~ $zoneregex ]]; then
     mv "${file}" "${file} - "$(isi zone zones view "${file}" | grep -Eo "${zoneregex}");
   fi
 done
 
 if ! [[ -e "${iaopath}"/online ]]; then
-  mkdir "${iaopath}"/online
+  mkdir "${iaopath}"/online || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/online"
 fi
 echo -e "--> Finding online AD providers.. <--"
-for file in *-*; do
-  # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # more accurate, but significantly slower
+for file in ./*-*; do
+  # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # NOTE: more accurate, but *significantly* slower
   if [[ $(isi auth status | grep  "${file##* - }" | grep -o online) == "online" ]]; then
     mv "${file}" ./online/
   fi
 done
 
-for file in *; do
+for file in ./*; do
   if [[ -f "${file}" ]]; then
     rm -f "${file}"
   fi
 done
-
 } # }}} End build_sloc
 
 prompt_sloc(){ #{{{ Dynamic AD/Zone pairing - vars: user_zone, user_ad, zone_path
 declare -a agency=()
-cd "${iaopath}"/online || exit
+cd "${iaopath}"/online || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/online"
 agency=( * )
 valid_sloc="false"
 while [ "${valid_sloc}" == "false" ]; do
@@ -164,7 +160,6 @@ while [ "${valid_sloc}" == "false" ]; do
     echo -e "ERROR: Invalid selection"
   fi
 done
-
 } # }}} End prompt_sloc
 
 prompt_stype(){ # {{{ Prompt for search type: User, Path or Delete - vars: user_stype, user_suser, user_sid, user_spath, search_param, path_arg
@@ -184,7 +179,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         if [[ "${#user_sid}" == "0" ]]; then
           echo -e "ERROR: User not found, please re-enter\n"
         else
-          mkdir "${iaopath}"/user || exit
+          mkdir "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
           touch "${iaopath}"/user/"${user_suser}_${user_sid}"
           valid_user="true"
         fi
@@ -235,7 +230,6 @@ DELMESSAGE
     ;;
   esac
 done
-
 } # }}} End prompt_search
 
 show_selections(){ # {{{ Display input and get user confirmation - vars: user_agree
@@ -251,7 +245,6 @@ else
 fi
 echo -e "\n"
 read -rep "Do your entries look correct [y|n]: " user_agree
-
 } # }}} End show_selections
 
 collect_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node_<#>_log.gz
@@ -263,7 +256,7 @@ echo -e "operation as we are waiting for the Isilon"
 echo -e "to retrieve all the records and may take a"
 echo -e "significant amount of time depending on how"
 echo -e "large the search range is.\n"
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for (( count=1; count < nodecount; count++)); do
   echo -e "--> Collecting logs from node ${count} of ${realnodecount}.. <--"
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
@@ -280,26 +273,24 @@ for (( count=1; count < nodecount; count++)); do
     echo -e "-->   Log contains ${rec_count_1} raw records <--"
   fi
 done
-
 } # }}} End collect_logs
 
 resolve_sid(){ #{{{ Takes a sid as argument and resolves it - vars: res_user
 if [[ -e "${iaopath}"/user ]]; then
-  cd "${iaopath}"/user || exit
+  cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 else
-  mkdir "${iaopath}"/user
-  cd "${iaopath}"/user || exit
+  mkdir "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
+  cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 fi
 res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
 touch ./"${res_user}"_"$1"
-
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a loglist
 loglist=( *.gz )
 if [[ "${1}" == "all" ]]; then
@@ -328,7 +319,7 @@ elif [[ "${1}" == "delete" ]]; then
   done
 fi
 
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a audres_list
 audres_list=( *.tmp1 )
 echo -e "\n"
@@ -343,10 +334,10 @@ for i in "${!audres_list[@]}"; do
 done
 rm -f ./*.tmp1
 
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   echo -e "--> Building SID list.. <--"
-  for file in *.tmp2; do
+  for file in ./*.tmp2; do
     grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
   done
   sort ./sidlist.tmp | uniq > ./sidlist
@@ -360,7 +351,7 @@ if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   done < ./sidlist
 fi
 
-cd "${iaopath}"/user || exit
+cd "${iaopath}"/user || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 for log in ../*.tmp2; do
   echo -e "--> Updating records with UserID.. <--"
   for user in *; do
@@ -371,7 +362,7 @@ for log in ../*.tmp2; do
 done
 rm -f ./*.tmp2
 
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${1}" == "all" ]]; then
   header="Time Stamp>Event Type>Create Result>Is Directory>Filename>New Filename>Client IP>User Name"
 elif [[ "${1}" == "delete" ]]; then
@@ -388,10 +379,9 @@ done
 rm -f "${iaopath}"/*.tmp3
 rm -f ./header
 
-for file in *.csv; do
+for file in ./*.csv; do
   mv "${file}" "${file/log/result}"
 done
-
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
@@ -404,7 +394,6 @@ if [[ -e "${iaopath}" ]]; then
 fi
 echo -e "--> Done - Goodbye <--"
 exit 1
-
 } # }}} End int_clean
 
 nd_clean(){ # {{{ Clean up after no data run
@@ -420,14 +409,13 @@ if [[ -e "${iaopath}" ]]; then
 fi
 echo -e "--> Done - Goodbye <--"
 exit 0
-
 } # }}} End nd_clean
 
 comp_clean(){ # {{{ Clean up after successful run
 echo -e "\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
-cd "${iaopath}" || exit
+cd "${iaopath}" || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 rm -rf ./online 2>/dev/null
 rm -rf ./user 2>/dev/null
 rm -rf ./*-* 2>/dev/null
@@ -436,7 +424,7 @@ rm -rf ./*.tmp* 2>/dev/null
 rm -rf ./sidlist 2>/dev/null
 tar cfz "${hts}"_AuditResults.tar.gz ./*.csv 2>/dev/null
 rm -rf ./*.csv 2>/dev/null
-cd "${HOME}" || exit
+cd "${HOME}" || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
 echo -e "The Audit result file(s) have been saved as:"
 echo -e "\n${iaopath}/${hts}_AuditResults.tar.gz\n"
 echo -e "which is a compressed tar archive."
@@ -447,8 +435,12 @@ echo -e "'>' delimited file in Excel."
 echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
 echo -e "after you have collected the results file.\n"
 exit 0
-
 } # }}} End comp_cleanup
+
+error_exit(){ # {{{ Generic error handling
+echo "${1:-"Unknown Error"}" 1>&2
+exit 1
+} # }}} End error_exit
 
 # }}} End functions section
 
@@ -500,7 +492,7 @@ if [[ "${user_cont}" == [yY] ]]; then
     nd_clean
   fi
 else
-  echo -e "Ok, exiting."
+  echo -e "Ok, exiting - Goodbye"
   exit 0
 fi
 # }}} End main tasks
