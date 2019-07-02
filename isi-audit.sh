@@ -107,11 +107,11 @@ declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for i in "${!az_list[@]}"; do
-  touch ./"${az_list[$i]}"
+  touch "${az_list[$i]}"
 done
 
 echo -e "--> Getting AD providers for Access Zones.. <--"
-for file  in ./*; do
+for file  in *; do
   if [[ $(isi zone zones view "${file}" | grep -Eo "${zoneregex}") =~ $zoneregex ]]; then
     mv "${file}" "${file} - "$(isi zone zones view "${file}" | grep -Eo "${zoneregex}");
   fi
@@ -121,14 +121,14 @@ if ! [[ -e "${iaopath}"/online ]]; then
   mkdir "${iaopath}"/online 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/online"
 fi
 echo -e "--> Finding online AD providers.. <--"
-for file in ./*-*; do
+for file in *-*; do
   # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # NOTE: more accurate, but *significantly* slower
   if [[ $(isi auth status | grep  "${file##* - }" | grep -o online) == "online" ]]; then
     mv "${file}" ./online/
   fi
 done
 
-for file in ./*; do
+for file in *; do
   if [[ -f "${file}" ]]; then
     rm -f "${file}"
   fi
@@ -332,23 +332,23 @@ for i in "${!audres_list[@]}"; do
   | sed -nE 's/\\\\/\\/gp' \
   >> "${audres_list[$i]%.*}".tmp2
 done
-rm -f ./*.tmp1
+rm -f *.tmp1
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   echo -e "--> Building SID list.. <--"
-  for file in ./*.tmp2; do
+  for file in *.tmp2; do
     grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
   done
-  sort ./sidlist.tmp | uniq > ./sidlist
-  rm ./sidlist.tmp
-  sidcount=$(wc -l ./sidlist | awk -F" " '{ print $1 }')
+  sort sidlist.tmp | uniq > sidlist
+  rm sidlist.tmp
+  sidcount=$(wc -l sidlist | awk -F" " '{ print $1 }')
   count=1
   while read -r SID; do
     echo -e "--> Resolving SID ${count} of ${sidcount}.. <--"
     resolve_sid "${SID}"
     (( count++ ))
-  done < ./sidlist
+  done < sidlist
 fi
 
 cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
@@ -360,7 +360,7 @@ for log in ../*.tmp2; do
     sed -nE "s/${sid}/${name/\\/ - }/gp" "${log}" >> "${log%.*}".tmp3
   done
 done
-rm -f ./*.tmp2
+rm -f *.tmp2
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${1}" == "all" ]]; then
@@ -377,9 +377,9 @@ for i in "${!headerlist[@]}"; do
   echo -e "-->   Log contains ${rec_count_3} formatted records including new header <--"
 done
 rm -f "${iaopath}"/*.tmp3
-rm -f ./header
+rm -f header
 
-for file in ./*.csv; do
+for file in *.csv; do
   mv "${file}" "${file/log/result}"
 done
 } # }}} End parse_log
@@ -416,14 +416,14 @@ echo -e "\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
-rm -rf ./online 2>/dev/null
-rm -rf ./user 2>/dev/null
-rm -rf ./*-* 2>/dev/null
-rm -rf ./*.gz 2>/dev/null
-rm -rf ./*.tmp* 2>/dev/null
-rm -rf ./sidlist 2>/dev/null
-tar cfz "${hts}"_AuditResults.tar.gz ./*.csv 2>/dev/null
-rm -rf ./*.csv 2>/dev/null
+rm -rf online 2>/dev/null
+rm -rf user 2>/dev/null
+rm -rf *-* 2>/dev/null
+rm -rf *.gz 2>/dev/null
+rm -rf *.tmp* 2>/dev/null
+rm -rf sidlist 2>/dev/null
+tar cfz "${hts}"_AuditResults.tar.gz *.csv 2>/dev/null
+rm -rf *.csv 2>/dev/null
 cd "${HOME}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
 echo -e "The Audit result file(s) have been saved as:"
 echo -e "\n${iaopath}/${hts}_AuditResults.tar.gz\n"
