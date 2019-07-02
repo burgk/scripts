@@ -227,6 +227,7 @@ DELMESSAGE
       echo -e "ERROR: Invalid choice, please type:"
       echo -e "u | U for a user based search"
       echo -e "p | P for a directory based search"
+      echo -e "d | D for a delete event type search"
     ;;
   esac
 done
