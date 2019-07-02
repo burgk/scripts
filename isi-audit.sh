@@ -124,7 +124,7 @@ echo -e "--> Finding online AD providers.. <--"
 for file in *-*; do
   # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # NOTE: more accurate, but *significantly* slower
   if [[ $(isi auth status | grep  "${file##* - }" | grep -o online) == "online" ]]; then
-    mv "${file}" ./online/
+    mv "${file}" online/
   fi
 done
 
