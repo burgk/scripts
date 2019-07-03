@@ -202,6 +202,8 @@ Do not include the \ifs\<agency> portion.
 Remember, the less specific the search criteria are the
 more likely we are to get unexpected matches, e.g. there
 may be several 'New Text Document.txt' in any given agency.
+Alternatively, too specific may cause us to miss if we have
+any errors in the path.
 
 PATHMESSAGE
       read -rep "What is the file, directory or path to search: " user_spath
@@ -284,7 +286,7 @@ else
   cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 fi
 res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
-touch ./"${res_user}"_"$1"
+touch "${res_user}"_"$1"
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel
