@@ -44,6 +44,7 @@ time as we wait for the Isilon to pull out all the log files.
 If your search duration is more than a few days, you may want
 to stop and re-run this script from inside a screen session so
 you can detach and let it run in the background.
+
 HEADERMSG
 } # }}} End display_header
 
@@ -78,7 +79,7 @@ done
 prompt_edate(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
 valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
-  read -rep "Enter end date in the format YYYY-MM-DD HH:MM: " user_edate
+  read -rep "Enter  end  date in the format YYYY-MM-DD HH:MM: " user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
     echo -e "ERROR: Invalid date format, need YYYY-MM-DD HH:MM"
   elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
@@ -156,6 +157,8 @@ while [ "${valid_sloc}" == "false" ]; do
     user_ad="${user_param##* - }"
     tmp_path="$(isi zone zones view --zone="${user_zone}" | grep Path | awk -F" " '{print $2}' | tr '/' '\')"
     zone_path="${tmp_path//\\/\\\\\\\\}"
+    echo -e "Selected: ${user_zone} - ${user_ad}"
+    sleep 1
     valid_sloc="true"
   else
     echo -e "ERROR: Invalid selection"
@@ -175,14 +178,20 @@ while [[ "${valid_stype}" = "false" ]]; do
       user_stype="User"
       valid_user="false"
       while [ "${valid_user}" == "false" ]; do
-        read -rep "What is the Windows AD user id to search in ${user_ad}: " user_suser
+        read -rep "What is the Windows AD user id to search for in ${user_ad}: " user_suser
         user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
           echo -e "ERROR: User not found, please re-enter\n"
         else
-          mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
-          touch "${iaopath}"/user/"${user_suser}_${user_sid}"
-          valid_user="true"
+          if [[ -e "${iaopath}"/user ]]; then # should only exist if editing
+            rm -rf "${iaopath}"/user/* # remove previous entries
+            touch "${iaopath}"/user/"${user_suser}_${user_sid}"
+            valid_user="true"
+          else
+            mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
+            touch "${iaopath}"/user/"${user_suser}_${user_sid}"
+            valid_user="true"
+          fi
         fi
       done
       search_param="${user_sid}"
@@ -193,10 +202,10 @@ while [[ "${valid_stype}" = "false" ]]; do
       user_stype="Path"
       echo -e "\n"
       cat <<'PATHMESSAGE'
-For a path search there are a few options. We can perform
-a case insensitive search on a file, directory or path.
+For a path search there are a couple options. We can perform
+a case insensitive search for a file or directory path.
 
-If you want to search on a path, please format it like:
+If you want to search for a directory path, please format it like:
 \path\to\search
 Do not include the \ifs\<agency> portion.
 
@@ -207,7 +216,7 @@ Alternatively, too specific may cause us to miss if we have
 any errors in the path.
 
 PATHMESSAGE
-      read -rep "What is the file, directory or path to search: " user_spath
+      read -rep "What is the file or directory path to search for: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
       parse_arg="all"
       valid_stype="true"
@@ -238,14 +247,17 @@ done
 
 show_selections(){ # {{{ Display input and get user confirmation - vars: user_agree
 user_agree="n"
-echo -e "\nYou entered:\n"
-echo -e "Start date/time: ${user_sdate}"
-echo -e "End date/time: ${user_edate}"
-echo -e "Search location: ${user_zone} - ${user_ad}"
+echo -e "\n***********************"
+echo -e "**  USER SELECTIONS  **"
+echo -e "***********************"
+echo -e "You entered:\n"
+echo -e "Start date/time:  ${user_sdate}"
+echo -e "End date/time:    ${user_edate}"
+echo -e "Search location:  ${user_zone} - ${user_ad}"
 if [[ "${user_stype}" == "User" ]]; then
-  echo -e "Search type: ${user_stype} - ${user_suser}"
+  echo -e "Search type:      ${user_stype} - ${user_suser}"
 else 
-  echo -e "Search type: ${user_stype} - ${search_param}"
+  echo "Search type:      ${user_stype} - ${user_spath}"
 fi
 echo -e "\n"
 read -rep "Do your entries look correct [y|n]: " user_agree
@@ -462,11 +474,14 @@ if [[ "${user_cont}" == [yY] ]]; then
   prompt_stype
   show_selections
   while [ "${user_agree}" == "n" ]; do
-    echo -e "\nWhich entry would you like to change?"
+    echo -e "\n**********************"
+    echo -e "**  EDIT SELECTION  **"
+    echo -e "**********************"
+    echo -e "Which entry would you like to change?\n"
     echo -e "[1] Start date/time"
     echo -e "[2] End date/time"
     echo -e "[3] Search location"
-    echo -e "[4] Search type"
+    echo -e "[4] Search type\n"
     read -rep "Enter selection: " user_change
     case "${user_change}" in
       1)
@@ -478,7 +493,12 @@ if [[ "${user_cont}" == [yY] ]]; then
       show_selections
       ;;
       3)
+      echo -e "\n-->  ----------------------------------------------------------  <--"
+      echo -e "-->  WARNING: Location changing, search type must be re-entered  <--"
+      echo -e "-->  ----------------------------------------------------------  <--"
+      sleep 1
       prompt_sloc
+      prompt_stype
       show_selections
       ;;
       4)
