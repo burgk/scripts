@@ -23,14 +23,15 @@ time_count="0"
 show_header(){ # {{{ Header
 echo -e "\n"
 cat <<'HEADERMSG'
-**************************************************************
-**     ___             ___ __     __  ____  _ ___ __        **
-**    /   | __  ______/ (_) /_   / / / / /_(_) (_) /___  __ **
-**   / /| |/ / / / __  / / __/  / / / / __/ / / / __/ / / / **
-**  / ___ / /_/ / /_/ / / /_   / /_/ / /_/ / / / /_/ /_/ /  **
-** /_/  |_\__,_/\__,_/_/\__/   \____/\__/_/_/_/\__/\__, /   **
-**                                                /____/    **
-**************************************************************
+****************************************************************
+**      ___             ___ __     __  ____  _ ___ __         **
+**     /   | __  ______/ (_) /_   / / / / /_(_) (_) /___  __  **
+**    / /| |/ / / / __  / / __/  / / / / __/ / / / __/ / / /  **
+**   / ___ / /_/ / /_/ / / /_   / /_/ / /_/ / / / /_/ /_/ /   **
+**  /_/  |_\__,_/\__,_/_/\__/   \____/\__/_/_/_/\__/\__, /    **
+**                                                 /____/     **
+**                                                            **
+****************************************************************
 
 This utility functions as a wrapper around the isi_audit_viewer
 command on Isilon.  It will prompt for the search criteria and
@@ -162,7 +163,7 @@ while [ "${valid_sloc}" == "false" ]; do
 done
 } # }}} End prompt_sloc
 
-prompt_stype(){ # {{{ Prompt for search type: User, Path or Delete - vars: user_stype, user_suser, user_sid, user_spath, search_param, path_arg
+prompt_stype(){ # {{{ Prompt for search type: User, Path or Delete - vars: user_stype, user_suser, user_sid, user_spath, search_param, parse_arg
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
   echo -e "\n*************************"
@@ -185,7 +186,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         fi
       done
       search_param="${user_sid}"
-      path_arg="all"
+      parse_arg="all"
       valid_stype="true"
     ;;
     p | P)
@@ -208,7 +209,7 @@ any errors in the path.
 PATHMESSAGE
       read -rep "What is the file, directory or path to search: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
-      path_arg="all"
+      parse_arg="all"
       valid_stype="true"
     ;;
     d |D)
@@ -222,7 +223,7 @@ will format the output to *only* show delete event types.
 DELMESSAGE
       read -rep "What is the file or directory we are searching for: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
-      path_arg="delete"
+      parse_arg="delete"
       valid_stype="true"
     ;;
     *)
@@ -489,7 +490,7 @@ if [[ "${user_cont}" == [yY] ]]; then
   echo -e "\n--> User entries have been confirmed, continuing.. <--"
   collect_logs
   if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
-    parse_log "${path_arg}"
+    parse_log "${parse_arg}"
     comp_clean
   else
     nd_clean
