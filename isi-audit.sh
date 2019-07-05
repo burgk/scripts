@@ -8,7 +8,7 @@ trap "int_clean" 2 3
 dateregex='^[0-9]{4}-(0[1-9]|1[012])\-(0[1-9]|[12][0-9]|3[01]) ([0-2][0-9]:[0-5][0-9])$' # date format regex
 zoneregex='(([[:upper:]]{1,}\.){1,}[[:upper:]]{1,})' # regex that matches the domain provider
 azregex='[[:digit:]]{1,}' # search location option regex
-sidregex='S-[[:digit:]]-[[:digit:]]-([[:digit:]]{1,}-){1,}[[:digit:]]{1,}'
+sidregex='S-[[:digit:]]-([[:digit:]]{1,}-){1,}[[:digit:]]{1,}' # updated to match well known sids
 efx400logdate="1450388912" # Earliest date on EFX400 Isilon - Thu Dec 17 14:48:32 MST 2015
 ts=$(date +%s) # time stamp
 hts=$(date +%Y-%m-%d) # human friendly time stamp
@@ -54,22 +54,29 @@ echo -e "\n*************************"
 echo -e "**  SEARCH TIME ENTRY  **"
 echo -e "*************************"
 while [ "${valid_sdate}" = "false" ]; do
+  echo -e "NOTE: Earliest allowed date is 2015-12-17 14:49"
+  echo -e "NOTE: Minimal testing has been done with dates prior to 2017."
   read -rep "Enter start date in the format YYYY-MM-DD HH:MM: " user_sdate
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
-    echo -e "ERROR: Invalid date format, need YYYY-MM-DD HH:MM"
+    echo -e "\n-->  -------------------------------------------------  <--"
+    echo -e "-->  ERROR: Invalid date format, need YYYY-MM-DD HH:MM  <--"
+    echo -e "-->  -------------------------------------------------  <--\n"
    elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
      epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
        if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-         echo -e "ERROR: Date is out of range"
+         echo -e "\n-->  ---------------------------  <--"
+         echo -e "-->  ERROR: Date is out of range  <--"
+         echo -e "-->  ---------------------------  <--\n"
        elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -lt "${epoch_edate}" ]]; then
          valid_sdate="true"
        elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -ge "${epoch_edate}" ]]; then
-         echo -e "ERROR: Start time is newer than end time!"
-         echo -e "If you need to adjust both, please adjust end time first."
+         echo -e "\n-->  ---------------------------------------------------------  <--"
+         echo -e "-->  ERROR: Start time is newer than end time!                  <--"
+         echo -e "-->  If you need to adjust both, please adjust end time first.  <--"
+         echo -e "-->  ---------------------------------------------------------  <--\n"
        else
          valid_sdate="true"
        fi
-#    fi
   else
     echo -e "ERROR: Invalid date entered"
   fi
@@ -81,13 +88,19 @@ valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
   read -rep "Enter  end  date in the format YYYY-MM-DD HH:MM: " user_edate
   if ! [[ ${user_edate} =~ $dateregex ]]; then
-    echo -e "ERROR: Invalid date format, need YYYY-MM-DD HH:MM"
+    echo -e "\n-->  -------------------------------------------------  <--"
+    echo -e "-->  ERROR: Invalid date format, need YYYY-MM-DD HH:MM  <--"
+    echo -e "-->  -------------------------------------------------  <--\n"
   elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
     epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
       if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-        echo -e "ERROR: End date is in the future"
+        echo -e "\n-->  --------------------------------  <--"
+        echo -e "-->  ERROR: End date is in the future  <--"
+        echo -e "-->  --------------------------------  <--\n"
       elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-        echo -e "ERROR: End date is before start date"
+        echo -e "\n-->  ------------------------------------  <--"
+        echo -e "-->  ERROR: End date is before start date  <--"
+        echo -e "-->  ------------------------------------  <--\n"
       else
         valid_edate="true"
       fi
@@ -143,7 +156,7 @@ cd "${iaopath}"/online 2>/dev/null || error_exit "ERROR at line $LINENO: Unable 
 agency=( * )
 valid_sloc="false"
 while [ "${valid_sloc}" == "false" ]; do
-  echo -e "\nSelect the Access Zone - AD Provider are we searching:\n"
+  echo -e "\nSelect the Access Zone - AD Provider we are searching:\n"
   arrsize="${#agency[@]}"
   for ((count=0; count < arrsize; count++)); do
     echo -e "[$((count + 1))] ${agency[$count]}"
@@ -161,7 +174,9 @@ while [ "${valid_sloc}" == "false" ]; do
     sleep 1
     valid_sloc="true"
   else
-    echo -e "ERROR: Invalid selection"
+    echo -e "\n-->  ------------------------  <--"
+    echo -e "-->  ERROR: Invalid selection  <--"
+    echo -e "-->  ------------------------  <--\n"
   fi
 done
 } # }}} End prompt_sloc
@@ -181,15 +196,17 @@ while [[ "${valid_stype}" = "false" ]]; do
         read -rep "What is the Windows AD user id to search for in ${user_ad}: " user_suser
         user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
-          echo -e "ERROR: User not found, please re-enter\n"
+          echo -e "\n-->  --------------------------------------  <--"
+          echo -e "-->  ERROR: User not found, please re-enter  <--"
+          echo -e "-->  --------------------------------------  <--\n"
         else
           if [[ -e "${iaopath}"/user ]]; then # should only exist if editing
-            rm -rf "${iaopath}"/user/* # remove previous entries
-            touch "${iaopath}"/user/"${user_suser}_${user_sid}"
+            rm -rf "${iaopath}"/user/* 2>/dev/null # silently remove previous entries
+            touch "${iaopath}"/user/"${user_ad%%.*}\\${user_suser}_${user_sid}"
             valid_user="true"
           else
-            mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
-            touch "${iaopath}"/user/"${user_suser}_${user_sid}"
+            mkdir "${iaopath}/user" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
+            touch "${iaopath}/user/${user_ad%%.*}\\${user_suser}_${user_sid}"
             valid_user="true"
           fi
         fi
@@ -202,7 +219,7 @@ while [[ "${valid_stype}" = "false" ]]; do
       user_stype="Path"
       echo -e "\n"
       cat <<'PATHMESSAGE'
-For a path search there are a couple options. We can perform
+For a path search there are a couple options. We will perform
 a case insensitive search for a file or directory path.
 
 If you want to search for a directory path, please format it like:
@@ -211,7 +228,7 @@ Do not include the \ifs\<agency> portion.
 
 Remember, the less specific the search criteria are the
 more likely we are to get unexpected matches, e.g. there
-may be several 'New Text Document.txt' in any given agency.
+may be several 'New Text Document.txt' in any given path.
 Alternatively, too specific may cause us to miss if we have
 any errors in the path.
 
@@ -230,7 +247,7 @@ directory as if it were a [P]ath search, but the script
 will format the output to *only* show delete event types.
 
 DELMESSAGE
-      read -rep "What is the file or directory we are searching for: " user_spath
+      read -rep "What is the deleted file or directory we are searching for: " user_spath
       search_param="${user_spath//\\/\\\\\\\\}"
       parse_arg="delete"
       valid_stype="true"
@@ -238,7 +255,7 @@ DELMESSAGE
     *)
       echo -e "ERROR: Invalid choice, please type:"
       echo -e "u | U for a user based search"
-      echo -e "p | P for a directory based search"
+      echo -e "p | P for a directory path based search"
       echo -e "d | D for a delete event type search"
     ;;
   esac
@@ -267,11 +284,17 @@ collect_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iao
 echo -e "\n**********************************"
 echo -e "**  LOG COLLECTION - FILTERING  **"
 echo -e "**********************************"
-echo -e "This is generally the slowest part of this"
-echo -e "operation as we are waiting for the Isilon"
-echo -e "to retrieve all the records and may take a"
-echo -e "significant amount of time depending on how"
-echo -e "large the search range is.\n"
+cat <<'LOGMSG'
+This is generally the slowest part of this
+operation as we are waiting for the Isilon
+to retrieve all the records and may take a
+significant amount of time depending on how
+large the search range is. For large time
+range searches, you might consider breaking
+up the work into multiple searches and then
+merging the results in Excel.
+
+LOGMSG
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for (( count=1; count < nodecount; count++)); do
   echo -e "--> Collecting logs from node ${count} of ${realnodecount}.. <--"
@@ -283,10 +306,10 @@ for (( count=1; count < nodecount; count++)); do
     > "${iaopath}"/node_"${count}"_log.gz
   rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
   if [[ "${rec_count_1}" == "0" ]]; then
-    echo -e "-->   Log contained ${rec_count_1} records, removing.. <--"
+    echo -e "-->  Log contained ${rec_count_1} records, removing.. <--"
     rm node_"${count}"_log.gz
   else
-    echo -e "-->   Log contains ${rec_count_1} raw records <--"
+    echo -e "-->  Log contains ${rec_count_1} filtered records <--"
   fi
 done
 } # }}} End collect_logs
@@ -317,7 +340,7 @@ if [[ "${1}" == "all" ]]; then
     else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
     else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp1
     rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
-    echo -e "-->   Log contains ${rec_count_2} records <--"
+    echo -e "-->  Log contains ${rec_count_2} records <--"
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!loglist[@]}"; do
@@ -327,10 +350,10 @@ elif [[ "${1}" == "delete" ]]; then
     >> "${loglist[$i]%.*}".tmp1
     rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
     if [[ "${rec_count_2}" == "0" ]]; then
-      echo -e "-->   No delete events found, removing.. <--"
+      echo -e "-->  No delete events found, removing.. <--"
       rm -f "${loglist[$i]%.*}".tmp1
     else
-      echo -e "-->   Log contains ${rec_count_2} delete records <--"
+      echo -e "-->  Log contains ${rec_count_2} delete records <--"
     fi
   done
 fi
@@ -347,12 +370,14 @@ for i in "${!audres_list[@]}"; do
   | sed -nE 's/>[[:alpha:]]{1,}:/>/gp' \
   | sed -nE 's/\\\\/\\/gp' \
   >> "${audres_list[$i]%.*}".tmp2
+  rec_count_3="$(wc -l "${audres_list[$i]%.*}.tmp2" | awk -F" " '{ print $1 }')"
+  echo -e "-->  Log contains ${rec_count_3} records <--"
 done
 rm -f *.tmp1
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
-  echo -e "--> Building SID list.. <--"
+  echo -e "\n--> Building SID list.. <--"
   for file in *.tmp2; do
     grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
   done
@@ -368,15 +393,15 @@ if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
 fi
 
 cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
+echo -e "\n--> Updating records with UserID.. <--"
 for log in ../*.tmp2; do
-  echo -e "--> Updating records with UserID.. <--"
   for user in *; do
     sid="${user#*_}"
     name="${user%_*}"
     sed -nE "s/${sid}/${name/\\/ - }/gp" "${log}" >> "${log%.*}".tmp3
   done
 done
-rm -f *.tmp2
+rm -f ./*.tmp2
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${1}" == "all" ]]; then
@@ -386,11 +411,12 @@ elif [[ "${1}" == "delete" ]]; then
 fi
 declare -a headerlist
 headerlist=( *.tmp3 )
+echo -e "\n"
 for i in "${!headerlist[@]}"; do
   echo "${header}" > "${headerlist[$i]%.*}".csv
   cat "${headerlist[$i]}" >> "${headerlist[$i]%.*}".csv
   rec_count_3=$(wc -l "${headerlist[$i]%.*}".csv | awk -F" " '{ print $1 }')
-  echo -e "-->   Log contains ${rec_count_3} formatted records including new header <--"
+  echo -e "--> Log contains ${rec_count_3} formatted records including new header <--"
 done
 rm -f "${iaopath}"/*.tmp3
 rm -f header
