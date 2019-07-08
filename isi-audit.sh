@@ -37,8 +37,8 @@ This utility functions as a wrapper around the isi_audit_viewer
 command on Isilon.  It will prompt for the search criteria and
 then collect the logs from each node for the times indicated.
 Once the logs have been collected, it will parse and format 
-them for importing into Excel as a '>' (greater than symbol)
-delimited file.
+them for importing into Excel or Google Sheets as a '>'
+(greater than symbol) delimited file.
 Some of the steps it performs may take a significant amount of
 time as we wait for the Isilon to pull out all the log files.
 If your search duration is more than a few days, you may want
@@ -77,8 +77,8 @@ while [ "${valid_sdate}" = "false" ]; do
        else
          valid_sdate="true"
        fi
-  else
-    echo -e "ERROR: Invalid date entered"
+#  else
+#    echo -e "ERROR: Invalid date entered"
   fi
 done
 } # }}} End prompt_sdate
@@ -196,9 +196,9 @@ while [[ "${valid_stype}" = "false" ]]; do
         read -rep "What is the Windows AD user id to search for in ${user_ad}: " user_suser
         user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
-          echo -e "\n-->  --------------------------------------  <--"
-          echo -e "-->  ERROR: User not found, please re-enter  <--"
-          echo -e "-->  --------------------------------------  <--\n"
+          echo -e "\n-->  --------------------------------------------------------------------------  <--"
+          echo -e "-->  ERROR: User not found in ${user_ad}, please re-enter  <--"
+          echo -e "-->  --------------------------------------------------------------------------  <--\n"
         else
           if [[ -e "${iaopath}"/user ]]; then # should only exist if editing
             rm -rf "${iaopath}"/user/* 2>/dev/null # silently remove previous entries
@@ -221,6 +221,8 @@ while [[ "${valid_stype}" = "false" ]]; do
       cat <<'PATHMESSAGE'
 For a path search there are a couple options. We will perform
 a case insensitive search for a file or directory path.
+NOTE: The search operates on the Isilon path which may differ from
+the SMB share path.
 
 If you want to search for a directory path, please format it like:
 \path\to\search
@@ -292,7 +294,7 @@ significant amount of time depending on how
 large the search range is. For large time
 range searches, you might consider breaking
 up the work into multiple searches and then
-merging the results in Excel.
+merging the results in Excel or Google Sheets.
 
 LOGMSG
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
@@ -473,7 +475,7 @@ echo -e "which is a compressed tar archive."
 echo -e "You will need to copy it to your local system."
 echo -e "Once there, it needs to be uncompressed and"
 echo -e "unarchived. Then, it can be imported as a"
-echo -e "'>' delimited file in Excel."
+echo -e "'>' delimited file in Excel or Google Sheets."
 echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
 echo -e "after you have collected the results file.\n"
 exit 0
