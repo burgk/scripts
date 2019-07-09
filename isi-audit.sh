@@ -197,7 +197,7 @@ while [[ "${valid_stype}" = "false" ]]; do
         user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
           echo -e "\n-->  --------------------------------------------------------------------------  <--"
-          echo -e "-->  ERROR: User not found in ${user_ad}, please re-enter  <--"
+          echo -e "-->  ERROR: User ${user_suser} not found in ${user_ad}, please re-enter  <--"
           echo -e "-->  --------------------------------------------------------------------------  <--\n"
         else
           if [[ -e "${iaopath}"/user ]]; then # should only exist if editing
@@ -327,7 +327,7 @@ res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name
 touch "${res_user}"_"$1"
 } # End resolve_sid }}}
 
-parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel
+parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel/Google Sheets
 echo -e "\n********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
 echo -e "********************************"
@@ -429,19 +429,19 @@ done
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
-echo -e "\n*****************************************"
+echo -e "\n\n*****************************************"
 echo -e "**  NOTICE: Interrupt signal detected  **"
 echo -e "*****************************************"
-echo -e "--> User abort - Cleaning up <--"
+echo -e "--> User aborted - Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done - Goodbye <--"
+echo -e "--> Done - Goodbye <--\n"
 exit 1
 } # }}} End int_clean
 
 nd_clean(){ # {{{ Clean up after no data run
-echo -e "\n*******************************"
+echo -e "\n\n*******************************"
 echo -e "**  NOTICE: No data matched  **"
 echo -e "*******************************"
 echo -e "Unfortunately, no data matched the search"
@@ -451,12 +451,12 @@ echo -e "--> Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done - Goodbye <--"
+echo -e "--> Done - Goodbye <--\n"
 exit 0
 } # }}} End nd_clean
 
 comp_clean(){ # {{{ Clean up after successful run
-echo -e "\n***************************"
+echo -e "\n\n***************************"
 echo -e "**  PROCESSING COMPLETE  **"
 echo -e "***************************"
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
