@@ -255,10 +255,12 @@ DELMESSAGE
       valid_stype="true"
     ;;
     *)
-      echo -e "ERROR: Invalid choice, please type:"
-      echo -e "u | U for a user based search"
-      echo -e "p | P for a directory path based search"
-      echo -e "d | D for a delete event type search"
+      echo -e "\n-->  ---------------------------------------  <--"
+      echo -e "-->  ERROR: Invalid choice, please type:      <--"
+      echo -e "-->  u | U for a user based search            <--"
+      echo -e "-->  p | P for a directory path based search  <--"
+      echo -e "-->  d | D for a delete event type search     <--"
+      echo -e "-->  ---------------------------------------  <--\n"
     ;;
   esac
 done
