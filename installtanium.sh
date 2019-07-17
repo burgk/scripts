@@ -163,45 +163,37 @@ case ${distro} in
 esac
 } #}}}
 
+validate_distroversion_err() { #{{{
+echo -e "${f_red}"
+echo -e "Error: In function validate_distroversion"
+echo -e "Found distro: ${distro}" 
+echo -e "Found major version: ${majversion}"
+echo -e "This is not a supported combination, exiting."
+echo -e "${reset}"
+exit 1
+#}}}
+
 validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then
   if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
   if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = *ebian ]]; then # Debian or debian
   if [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]] || [[ ${majversion} = "9" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 elif [[ ${distro} = "Ubuntu" ]]; then
   if [[ ${majversion} = "10" ]] || [[ ${majversion} = "14" ]] || [[ ${majversion} = "16" ]] || [[ ${majversion} = "18" ]]; then
@@ -213,13 +205,7 @@ elif [[ ${distro} = "Amazon" ]]; then
     supportedver="true"
     return
   else
-    echo -e "${f_red}"
-    echo -e "Error: In function validate_distroversion"
-    echo -e "Found distro: ${distro}" 
-    echo -e "Found major version: ${majversion}"
-    echo -e "This is not a supported combination, exiting."
-    echo -e "${reset}"
-    exit 1
+    validate_distroversion_err
   fi
 else
   supportedver="false"
@@ -497,9 +483,10 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     cliarg=$1
     ;;
   -u) # Unattended arg
+    silentinstall="true"
     unattended="true"
     case "${domain}" in
-    CDA)
+    INT) # CDA
       cliarg="1"
     ;;
     CDHS)
@@ -508,25 +495,25 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     CDLE)
       cliarg="3"
     ;;
-    CDOT)
+    DOT) # CDOT
       cliarg="4"
     ;;
-    CDPHE)
+    DPHE) # CDPHE
       cliarg="5"
     ;;
-    CDPS)
+    CDPS) # Not in vRA?
       cliarg="6"
     ;;
-    CHS)
+    CHS1) # CHS
       cliarg="7"
     ;;
-    CST)
+    TREASURY) # CST
       cliarg="8"
     ;;
-    DMVA)
+    DMVA) # Not in vRA?
       cliarg="9"
     ;;
-    DNR)
+    NATURENET) # DNR
       cliarg="10"
     ;;
     DOC)
@@ -535,7 +522,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     DOLA)
       cliarg="12"
     ;;
-    DOR)
+    REVENUE) # DOR
       cliarg="13"
     ;;
     DORA)
@@ -544,7 +531,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     DPA)
       cliarg="15"
     ;;
-    GOV)
+    STATECAPITOL) # GOV
       cliarg="16"
     ;;
     HCPF)
@@ -553,7 +540,7 @@ get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
     OIT)
       cliarg="18"
     ;;
-    OITEDIT)
+    OITEDIT) # Not in vRA?
       cliarg="19"
     ;;
     Unconfigured)
@@ -905,18 +892,6 @@ if [[ ${silentinstall} = "true" ]]; then
     echo -e "are open to ${serverip}" >> "${logfile}"
     exit 0
   fi
-elif [[ "${unattended}" = "true" ]]; then
-  if [[ ${distro} = "Amazon" ]]; then
-    echo -e "Installation Complete" >> "${logfile}"
-    echo -e "Please verify that your AWS security group allows ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
-    echo -e "to ${serverip}" >> "${logfile}"
-    exit 0
-  else
-    echo -e "Installation Complete" >> "${logfile}"
-    echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP" >> "${logfile}"
-    echo -e "are open to ${serverip}" >> "${logfile}"
-    exit 0
-  fi
 else
   echo -e "${f_green}Installation Complete${reset}"
   echo -e "Please verify that firewall ports ${taniumport}/TCP and ${taniumport2}/TCP"
@@ -925,7 +900,7 @@ else
 fi
 } #}}}
 
-# BEGIN PROCESSING
+# Begin main tasks {{{
 check_root
 get_distro
 get_distroversion
@@ -965,4 +940,5 @@ else
   echo -e "${f_red}Unrecognized command line argument, exiting${reset}"
   exit 1
 fi
+# }}} End main tasks
 exit 0

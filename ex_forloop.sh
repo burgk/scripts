@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: Find the largest directories in the current dir
-# Date: 2019-04-21
+# Purpose: For loop example
+# Date: 2019-05-21
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
@@ -12,42 +12,18 @@ termsize="$(tput lines)"
 
 # }}}
 
-# Functions {{{
-get_sizes(){ # {{{
-for dir in .[!.]* *; do
-  if [[ -d "${dir}" ]]; then
-    cd "${dir}" 2>/dev/null || return 
-    size=$("du" -s 2>/dev/null | cut -f1)
-    echo -e "${size};${dir}" >> "${tmpfile}"
-    cd .. || exit
-  else
-    :
-  fi
-done
-} # }}} End get_sizes
-
-# }}}
-
 # Begin main tasks {{{
 if [[ "$#" = "0" ]]; then
-  if (( EUID != 0 )); then
-    echo -e "WARNING: Not running as EUID 0, results may not be accurate!"
-    read -rp "Continue anyway? " response
-    case "${response}" in
-    y | Y)
+  for dir in .[!.]* *; do
+    if [[ -d "${dir}" ]]; then
+      cd "${dir}" || exit
+      size=$("du" -s | cut -f1) >/dev/null 2>&1
+      echo -e "${size};${dir}" >> "${tmpfile}"
+      cd .. || exit
+    else
       :
-    ;;
-    n | N)
-      echo -e "Ok, exiting"
-      exit 1
-    ;;
-    *)
-      echo -e "Invalid response, exiting"
-      exit 1
-    ;;
-    esac
-  fi
-  get_sizes
+    fi
+  done
 else
   echo -e "No arguments supported, this must be run from the location"
   echo -e "you want the list from.  Use of sudo or root may be"

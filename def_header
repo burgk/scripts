@@ -4,6 +4,11 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
+# set -x # Enable debug
+
+# }}}
+
+# Function definitions {{{
 
 # }}}
 

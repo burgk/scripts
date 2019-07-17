@@ -10,7 +10,7 @@
    
 IFS='\'
    
-youtube-dl -o "%(autonumber)s - %(title)s.%(ext)s" --autonumber-size 2 -x --prefer-ffmpeg --ffmpeg-location ~/scripts ${1}
+youtube-dl -o "%(autonumber)s - %(title)s.%(ext)s" --autonumber-size 2 -x --prefer-ffmpeg ${1} #--ffmpeg-location ~/scripts ${1}
 exit 0
  
 # else
