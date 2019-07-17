@@ -8,7 +8,7 @@ pager=bat
 # }}} End misc vars
 
 # Begin main tasks {{{
-if [[ $EUID != 0 ]]; then
+if [[ $EUID -ne 0 ]]; then
   echo -e "Many files need root privileges to read and you are not root."
   read -rep "Please re-run as root or via sudo, or enter y to continue anyway: " user_reply
 fi
