@@ -16,7 +16,7 @@ nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
 realnodecount=$((nodecount - 1))
 iaopath="/ifs/iao-${ts}" # isi-audit output path
 time_count="0"
-# }}}
+# }}} End misc vars
 
 # Functions {{{
 
