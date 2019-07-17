@@ -4,13 +4,20 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
-pager=bat
+pager1="/usr/bin/bat"
+pager2="/usr/bin/less"
 # }}} End misc vars
 
 # Begin main tasks {{{
 if [[ $EUID -ne 0 ]]; then
   echo -e "Many files need root privileges to read and you are not root."
   read -rep "Please re-run as root or via sudo, or enter y to continue anyway: " user_reply
+fi
+
+if [[ -e "${pager1}" ]]; then
+  pager="${pager1}"
+elif [[ -e "${pager2}" ]]; then
+  pager="${pager2}"
 fi
 
 case "${user_reply}" in
