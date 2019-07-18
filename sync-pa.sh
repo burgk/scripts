@@ -4,16 +4,31 @@
 
 # Misc variable definitions {{{
 padir="/cygdrive/d/Documents/"
-gddir="/cygdrive/g/My\ Drive/P.A.com-Docs"
+paready="false"
+gddir='/cygdrive/g/My Drive/P.A.com-Docs'
+gdready="false"
 # }}} End misc var
 
 # Begin main tasks {{{
-if [[ -e "${padir}" ]] && [[ -e "${gddir}" ]]; then
-  echo -e "Both dirs are available, initiating sync.."
-  rsync -havz "${padir}" "${gddir}"
+if [[ -e "${padir}" ]]; then
+  echo -e "PortableApps dir available - good"
+  paready="true"
 else
-  echo -e "One of the paths is missing, exiting!"
+  echo -e "PortableApps dir not available - exiting!"
   exit 1
 fi
 
+if [[ -e "${gddir}" ]]; then
+  echo -e "Google Drive dir available - good"
+  gdready="true"
+else
+  echo -e "Google Drive not available - exiting!"
+  exit 1
+fi
+
+if [[ "${paready}" == "true" ]] && [[ "${gdready}" == "true" ]]; then
+  echo -e "Both sync paths available - continuing.."
+  rsync -havz "${padir}" "${gddir}"
+fi
+exit 0
 # End main tasks }}}
