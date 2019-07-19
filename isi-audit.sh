@@ -323,7 +323,7 @@ for (( count=1; count < nodecount; count++)); do
     > "${iaopath}"/node_"${count}"_log.gz
   rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
   if [[ "${rec_count_1}" == "0" ]]; then
-    echo -e "${f_yellow}-->  Log contained ${reset}${f_red}${rec_count_1}${reset}${f_yellow} records, removing.. <--${reset}"
+    echo -e "${f_yellow}-->  Log contained ${reset}${f_red}${rec_count_1}${reset}${f_yellow} relevant records, removing.. <--${reset}"
     rm node_"${count}"_log.gz
   else
     echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_1}${reset}${f_yellow} filtered records <--${reset}"
