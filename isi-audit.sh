@@ -291,7 +291,7 @@ echo -e "Search location:  ${f_green}${user_zone} - ${user_ad}${reset}"
 if [[ "${user_stype}" == "User" ]]; then
   echo -e "Search type:      ${f_green}${user_stype} - ${user_suser}${reset}"
 else 
-  echo "Search type:      ${f_green}${user_stype} - ${user_spath}${reset}"
+  echo -e "Search type:      ${f_green}${user_stype} - ${user_spath}${reset}"
 fi
 echo -e "\n"
 read -rep "Do your entries look correct [y|n]: " user_agree
@@ -323,10 +323,10 @@ for (( count=1; count < nodecount; count++)); do
     > "${iaopath}"/node_"${count}"_log.gz
   rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
   if [[ "${rec_count_1}" == "0" ]]; then
-    echo -e "${f_yellow}-->  Log contained ${rec_count_1} records, removing.. <--${reset}"
+    echo -e "${f_yellow}-->  Log contained ${reset}${f_red}${rec_count_1}${reset}${f_yellow} records, removing.. <--${reset}"
     rm node_"${count}"_log.gz
   else
-    echo -e "${f_yellow}-->  Log contains ${rec_count_1} filtered records <--${reset}"
+    echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_1}${reset}${f_yellow} filtered records <--${reset}"
   fi
 done
 } # }}} End collect_logs
@@ -357,7 +357,7 @@ if [[ "${1}" == "all" ]]; then
     else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
     else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp1
     rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
-    echo -e "${f_yellow}-->  Log contains ${rec_count_2} records <--${reset}"
+    echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_2}${reset}${f_yellow} records <--${reset}"
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!loglist[@]}"; do
@@ -370,7 +370,7 @@ elif [[ "${1}" == "delete" ]]; then
       echo -e "${f_yellow}-->  No delete events found, removing.. <--${reset}"
       rm -f "${loglist[$i]%.*}".tmp1
     else
-      echo -e "${f_yellow}-->  Log contains ${rec_count_2} delete records <--${reset}"
+      echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_2}${reset}${f_yellow} delete records <--${reset}"
     fi
   done
 fi
@@ -388,7 +388,7 @@ for i in "${!audres_list[@]}"; do
   | sed -nE 's/\\\\/\\/gp' \
   >> "${audres_list[$i]%.*}".tmp2
   rec_count_3="$(wc -l "${audres_list[$i]%.*}.tmp2" | awk -F" " '{ print $1 }')"
-  echo -e "${f_yellow}-->  Log contains ${rec_count_3} records <--${reset}"
+  echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} records <--${reset}"
 done
 rm -f *.tmp1
 
@@ -433,7 +433,7 @@ for i in "${!headerlist[@]}"; do
   echo "${header}" > "${headerlist[$i]%.*}".csv
   cat "${headerlist[$i]}" >> "${headerlist[$i]%.*}".csv
   rec_count_3=$(wc -l "${headerlist[$i]%.*}".csv | awk -F" " '{ print $1 }')
-  echo -e "${f_yellow}--> Log contains ${rec_count_3} formatted records including new header <--${reset}"
+  echo -e "${f_yellow}--> Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} formatted records including new header <--${reset}"
 done
 rm -f "${iaopath}"/*.tmp3
 rm -f header
@@ -462,11 +462,11 @@ echo -e "*******************************${reset}"
 echo -e "Unfortunately, no data matched the search"
 echo -e "criteria provided. If this was a path search"
 echo -e "there may have been path elements missing."
-echo -e "--> Cleaning up <--"
+echo -e "${f_yellow}--> Cleaning up <--"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done - Goodbye <--\n"
+echo -e "--> Done - Goodbye <--\n${reset}"
 exit 0
 } # }}} End nd_clean
 
