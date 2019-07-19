@@ -484,7 +484,6 @@ rm -rf *.tmp* 2>/dev/null
 rm -rf sidlist 2>/dev/null
 tar cfz "${hts}"_AuditResults.tar.gz *.csv 2>/dev/null
 rm -rf *.csv 2>/dev/null
-cd "${HOME}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
 echo -e "The Audit result file(s) have been saved as:"
 echo -e "\n${f_green}${iaopath}/${hts}_AuditResults.tar.gz\n${reset}"
 echo -e "which is a compressed tar archive."
@@ -492,7 +491,7 @@ echo -e "You will need to copy it to your local system."
 echo -e "Once there, it needs to be uncompressed and"
 echo -e "unarchived. Then, it can be imported as a"
 echo -e "'>' delimited file in Excel or Google Sheets."
-echo -e "${f_yellow}NOTE: Do not forget to remove the directory ${iaopath}"
+echo -e "\n${f_yellow}NOTE: Do not forget to remove the directory ${iaopath}"
 echo -e "after you have collected the results file.\n${reset}"
 exit 0
 } # }}} End comp_cleanup
