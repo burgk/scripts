@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Purpose: Wrapper to parse through isi_audit_viewer data
 # Date: 2019-04-19
 # Kevin Burg - kevin.burg@state.co.us
