@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 # Purpose: Wrapper to parse through isi_audit_viewer data
 # Date: 2019-04-19
 # Kevin Burg - kevin.burg@state.co.us
@@ -16,12 +16,22 @@ nodecount="$(ls -l /ifs/.ifsvar/audit/logs | wc -l)" # node count +1
 realnodecount=$((nodecount - 1))
 iaopath="/ifs/iao-${ts}" # isi-audit output path
 time_count="0"
+
+# Terminal color definitions {{{
+# Define 8 bit foreground colors
+f_red="\e[31m"
+f_green="\e[32m"
+f_yellow="\e[33m"
+# Non color settings
+reset="\e[0m"
 # }}}
+
+# }}} End misc vars
 
 # Functions {{{
 
 show_header(){ # {{{ Header
-echo -e "\n"
+echo -e "\n ${f_green}"
 cat <<'HEADERMSG'
 ****************************************************************
 **      ___             ___ __     __  ____  _ ___ __         **
@@ -46,39 +56,41 @@ to stop and re-run this script from inside a screen session so
 you can detach and let it run in the background.
 
 HEADERMSG
+echo -e "${reset}"
 } # }}} End display_header
 
 prompt_sdate(){ # {{{ Prompt and validate supplied start date - vars: user_sdate, epoch_sdate
 valid_sdate="false"
-echo -e "\n*************************"
+echo -e "\n${f_green}*************************"
 echo -e "**  SEARCH TIME ENTRY  **"
-echo -e "*************************"
+echo -e "*************************${reset}"
+echo -e "NOTE: Earliest allowed date is 2015-12-17 14:49"
+echo -e "NOTE: Minimal testing has been done with dates prior to 2017.\n"
 while [ "${valid_sdate}" = "false" ]; do
-  echo -e "NOTE: Earliest allowed date is 2015-12-17 14:49"
-  echo -e "NOTE: Minimal testing has been done with dates prior to 2017."
-  read -rep "Enter start date in the format YYYY-MM-DD HH:MM: " user_sdate
+  echo -ne "Enter ${f_green}start${reset} date in the format YYYY-MM-DD HH:MM : "
+  echo -ne "${f_green}"
+  read -re user_sdate
+  echo -ne "${reset}"
   if ! [[ ${user_sdate} =~ $dateregex ]]; then
-    echo -e "\n-->  -------------------------------------------------  <--"
+    echo -e "\n${f_red}-->  -------------------------------------------------  <--"
     echo -e "-->  ERROR: Invalid date format, need YYYY-MM-DD HH:MM  <--"
-    echo -e "-->  -------------------------------------------------  <--\n"
-   elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
-     epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
-       if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
-         echo -e "\n-->  ---------------------------  <--"
-         echo -e "-->  ERROR: Date is out of range  <--"
-         echo -e "-->  ---------------------------  <--\n"
-       elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -lt "${epoch_edate}" ]]; then
-         valid_sdate="true"
-       elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -ge "${epoch_edate}" ]]; then
-         echo -e "\n-->  ---------------------------------------------------------  <--"
-         echo -e "-->  ERROR: Start time is newer than end time!                  <--"
-         echo -e "-->  If you need to adjust both, please adjust end time first.  <--"
-         echo -e "-->  ---------------------------------------------------------  <--\n"
-       else
-         valid_sdate="true"
-       fi
-#  else
-#    echo -e "ERROR: Invalid date entered"
+    echo -e "-->  -------------------------------------------------  <--\n${reset}"
+  elif [[ $(date -j -f "%F %T" "${user_sdate}":00 +%s) ]]; then # FreeBSD date format
+    epoch_sdate="$(date -j -f "%F %T" "${user_sdate}":00 +%s)" # FreeBSD date format
+    if [[ "${epoch_sdate}" -lt "${efx400logdate}" ]] || [[ "${epoch_sdate}" -gt "${ts}" ]]; then
+      echo -e "\n${f_red}-->  ---------------------------  <--"
+      echo -e "-->  ERROR: Date is out of range  <--"
+      echo -e "-->  ---------------------------  <--\n${reset}"
+    elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -lt "${epoch_edate}" ]]; then
+      valid_sdate="true"
+    elif [[ "${time_count}" -gt "0" ]] && [[ "${epoch_sdate}" -ge "${epoch_edate}" ]]; then
+      echo -e "\n${f_red}-->  ---------------------------------------------------------  <--"
+      echo -e "-->  ERROR: Start time is newer than end time!                  <--"
+      echo -e "-->  If you need to adjust both, please adjust end time first.  <--"
+      echo -e "-->  ---------------------------------------------------------  <--\n${reset}"
+    else
+      valid_sdate="true"
+    fi
   fi
 done
 } # }}} End prompt_sdate
@@ -86,26 +98,28 @@ done
 prompt_edate(){ # {{{ Prompt and validate supplied end date - vars: user_edate, epoch_edate
 valid_edate="false"
 while [ "${valid_edate}" = "false" ]; do
-  read -rep "Enter  end  date in the format YYYY-MM-DD HH:MM: " user_edate
+  echo -ne "Enter  ${f_yellow}end${reset}  date in the format YYYY-MM-DD HH:MM : "
+  echo -ne "${f_yellow}"
+  read -re  user_edate
+  echo -ne "${reset}"
   if ! [[ ${user_edate} =~ $dateregex ]]; then
-    echo -e "\n-->  -------------------------------------------------  <--"
+    echo -e "\n${f_red}-->  -------------------------------------------------  <--"
     echo -e "-->  ERROR: Invalid date format, need YYYY-MM-DD HH:MM  <--"
-    echo -e "-->  -------------------------------------------------  <--\n"
+    echo -e "-->  -------------------------------------------------  <--\n${reset}"
   elif [[ $(date -j -f "%F %T" "${user_edate}":00 +%s) ]]; then # FreeBSD date format
     epoch_edate="$(date -j -f "%F %T" "${user_edate}":00 +%s)" # FreeBSD date format
-      if [[ "${epoch_edate}" -gt "${ts}" ]]; then
-        echo -e "\n-->  --------------------------------  <--"
-        echo -e "-->  ERROR: End date is in the future  <--"
-        echo -e "-->  --------------------------------  <--\n"
-      elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
-        echo -e "\n-->  ------------------------------------  <--"
-        echo -e "-->  ERROR: End date is before start date  <--"
-        echo -e "-->  ------------------------------------  <--\n"
-      else
-        valid_edate="true"
-      fi
+    if [[ "${epoch_edate}" -gt "${ts}" ]]; then
+      echo -e "\n${f_red}-->  --------------------------------  <--"
+      echo -e "-->  ERROR: End date is in the future  <--"
+      echo -e "-->  --------------------------------  <--\n${reset}"
+    elif [[ "${epoch_edate}" -lt "${epoch_sdate}" ]]; then
+      echo -e "\n${f_red}-->  ------------------------------------  <--"
+      echo -e "-->  ERROR: End date is before start date  <--"
+      echo -e "-->  ------------------------------------  <--\n${reset}"
+    else
+      valid_edate="true"
+    fi
   fi
-#  fi
 done
 ((time_count++))
 } # }}} End prompt_edate
@@ -114,10 +128,10 @@ build_sloc(){ # {{{ Build search location data structure
 if ! [[ -e "${iaopath}" ]]; then
   mkdir "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}"
 fi
-echo -e "\n*****************************"
+echo -e "\n${f_green}*****************************"
 echo -e "**  SEARCH LOCATION ENTRY  **"
-echo -e "*****************************"
-echo -e "--> Building Access Zone list for cluster.. <--"
+echo -e "*****************************${reset}"
+echo -e "${f_yellow}-->  Building Access Zone list for cluster..${reset}"
 declare -a az_list=()
 while read -r line; do az_list+=("$line"); done < <( isi zone zones list -a -z | cut -d" " -f1 | sort )
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
@@ -125,7 +139,7 @@ for i in "${!az_list[@]}"; do
   touch "${az_list[$i]}"
 done
 
-echo -e "--> Getting AD providers for Access Zones.. <--"
+echo -e "${f_yellow}-->  Getting AD providers for Access Zones..${reset}"
 for file  in *; do
   if [[ $(isi zone zones view "${file}" | grep -Eo "${zoneregex}") =~ $zoneregex ]]; then
     mv "${file}" "${file} - "$(isi zone zones view "${file}" | grep -Eo "${zoneregex}");
@@ -135,7 +149,7 @@ done
 if ! [[ -e "${iaopath}"/online ]]; then
   mkdir "${iaopath}"/online 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/online"
 fi
-echo -e "--> Finding online AD providers.. <--"
+echo -e "${f_yellow}-->  Finding online AD providers..${reset}"
 for file in *-*; do
   # if [[ $(isi auth ads view "${file##*,}" 2>/dev/null | grep -o online) == "online" ]]; then # NOTE: more accurate, but *significantly* slower
   if [[ $(isi auth status | grep  "${file##* - }" | grep -o online) == "online" ]]; then
@@ -170,13 +184,11 @@ while [ "${valid_sloc}" == "false" ]; do
     user_ad="${user_param##* - }"
     tmp_path="$(isi zone zones view --zone="${user_zone}" | grep Path | awk -F" " '{print $2}' | tr '/' '\')"
     zone_path="${tmp_path//\\/\\\\\\\\}"
-    echo -e "Selected: ${user_zone} - ${user_ad}"
-    sleep 1
     valid_sloc="true"
   else
-    echo -e "\n-->  ------------------------  <--"
+    echo -e "\n${f_red}-->  ------------------------  <--"
     echo -e "-->  ERROR: Invalid selection  <--"
-    echo -e "-->  ------------------------  <--\n"
+    echo -e "-->  ------------------------  <--\n${reset}"
   fi
 done
 } # }}} End prompt_sloc
@@ -184,9 +196,9 @@ done
 prompt_stype(){ # {{{ Prompt for search type: User, Path or Delete - vars: user_stype, user_suser, user_sid, user_spath, search_param, parse_arg
 valid_stype="false"
 while [[ "${valid_stype}" = "false" ]]; do
-  echo -e "\n*************************"
+  echo -e "\n${f_green}*************************"
   echo -e "**  SEARCH TYPE ENTRY  **"
-  echo -e "*************************"
+  echo -e "*************************${reset}"
   read -rep "Will this search be for a [U]ser, [P]ath or [D]eletion: " user_tmptype
   case "${user_tmptype}" in
     u | U)
@@ -196,12 +208,16 @@ while [[ "${valid_stype}" = "false" ]]; do
         read -rep "What is the Windows AD user id to search for in ${user_ad}: " user_suser
         user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
-          echo -e "\n-->  --------------------------------------------------------------------------  <--"
-          echo -e "-->  ERROR: User ${user_suser} not found in ${user_ad}, please re-enter  <--"
-          echo -e "-->  --------------------------------------------------------------------------  <--\n"
+          echo -e "${f_red}"
+          printf "%55s\n" "-->  ----------------------------------------------  <--"
+          printf "%-50s %5s\n" "-->  ERROR: User: ${user_suser}  " "<--"
+          printf "%-50s %5s\n" "-->  Not found in: ${user_ad}  " "<--"
+          printf "%-50s %5s\n" "-->  Please re-enter  " "<--"
+          printf "%55s\n" "-->  ----------------------------------------------  <--"
+          echo -e "${reset}\n"
         else
           if [[ -e "${iaopath}"/user ]]; then # should only exist if editing
-            rm -rf "${iaopath}"/user/* 2>/dev/null # silently remove previous entries
+            rm -rf "${iaopath}"/user/* 2>/dev/null # silently remove previous entry
             touch "${iaopath}"/user/"${user_ad%%.*}\\${user_suser}_${user_sid}"
             valid_user="true"
           else
@@ -246,7 +262,7 @@ PATHMESSAGE
       cat <<'DELMESSAGE'
 For a deletion search, we'll need the name of the file or
 directory as if it were a [P]ath search, but the script
-will format the output to *only* show delete event types.
+will format the output to show *only* delete event types.
 
 DELMESSAGE
       read -rep "What is the deleted file or directory we are searching for: " user_spath
@@ -255,12 +271,12 @@ DELMESSAGE
       valid_stype="true"
     ;;
     *)
-      echo -e "\n-->  ---------------------------------------  <--"
+      echo -e "\n${f_red}-->  ---------------------------------------  <--"
       echo -e "-->  ERROR: Invalid choice, please type:      <--"
       echo -e "-->  u | U for a user based search            <--"
       echo -e "-->  p | P for a directory path based search  <--"
       echo -e "-->  d | D for a delete event type search     <--"
-      echo -e "-->  ---------------------------------------  <--\n"
+      echo -e "-->  ---------------------------------------  <--\n${reset}"
     ;;
   esac
 done
@@ -268,26 +284,26 @@ done
 
 show_selections(){ # {{{ Display input and get user confirmation - vars: user_agree
 user_agree="n"
-echo -e "\n***********************"
+echo -e "\n${f_green}***********************"
 echo -e "**  USER SELECTIONS  **"
-echo -e "***********************"
+echo -e "***********************${reset}"
 echo -e "You entered:\n"
-echo -e "Start date/time:  ${user_sdate}"
-echo -e "End date/time:    ${user_edate}"
-echo -e "Search location:  ${user_zone} - ${user_ad}"
+echo -e "Start date/time:  ${f_green}${user_sdate}${reset}"
+echo -e "End date/time:    ${f_green}${user_edate}${reset}"
+echo -e "Search location:  ${f_green}${user_zone} - ${user_ad}${reset}"
 if [[ "${user_stype}" == "User" ]]; then
-  echo -e "Search type:      ${user_stype} - ${user_suser}"
+  echo -e "Search type:      ${f_green}${user_stype} - ${user_suser}${reset}"
 else 
-  echo "Search type:      ${user_stype} - ${user_spath}"
+  echo -e "Search type:      ${f_green}${user_stype} - ${user_spath}${reset}"
 fi
 echo -e "\n"
 read -rep "Do your entries look correct [y|n]: " user_agree
 } # }}} End show_selections
 
 collect_logs(){ # {{{ For loop to get>put each nodes logs to a .gz file in ${iaopath}/node_<#>_log.gz
-echo -e "\n**********************************"
+echo -e "\n${f_green}**********************************"
 echo -e "**  LOG COLLECTION - FILTERING  **"
-echo -e "**********************************"
+echo -e "**********************************${reset}"
 cat <<'LOGMSG'
 This is generally the slowest part of this
 operation as we are waiting for the Isilon
@@ -301,7 +317,7 @@ merging the results in Excel or Google Sheets.
 LOGMSG
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 for (( count=1; count < nodecount; count++)); do
-  echo -e "--> Collecting logs from node ${count} of ${realnodecount}.. <--"
+  echo -e "${f_yellow}-->  Collecting logs from node ${count} of ${realnodecount}..${reset}"
     isi_audit_viewer -t protocol -n "${count}" -s "${user_sdate}" -e "${user_edate}" \
     | grep "${zone_path}" \
     | grep -i "${search_param}" \
@@ -310,10 +326,10 @@ for (( count=1; count < nodecount; count++)); do
     > "${iaopath}"/node_"${count}"_log.gz
   rec_count_1=$(zcat node_"${count}"_log.gz | wc -l | awk -F" " '{ print $1 }')
   if [[ "${rec_count_1}" == "0" ]]; then
-    echo -e "-->  Log contained ${rec_count_1} records, removing.. <--"
+    echo -e "${f_yellow}--->  Log contained ${reset}${f_red}${rec_count_1}${reset}${f_yellow} relevant records, removing..${reset}"
     rm node_"${count}"_log.gz
   else
-    echo -e "-->  Log contains ${rec_count_1} filtered records <--"
+    echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_1}${reset}${f_yellow} filtered records${reset}"
   fi
 done
 } # }}} End collect_logs
@@ -330,34 +346,34 @@ touch "${res_user}"_"$1"
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel/Google Sheets
-echo -e "\n********************************"
+echo -e "\n${f_green}********************************"
 echo -e "**  LOG PARSING - FORMATTING  **"
-echo -e "********************************"
+echo -e "********************************${reset}"
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a loglist
 loglist=( *.gz )
 if [[ "${1}" == "all" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Pulling relevant fields from ${loglist[$i]%.*}.. <--"
+    echo -e "${f_yellow}-->  Pulling relevant fields from ${loglist[$i]%.*}..${reset}"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:create" ) print $1,$7,$8,$9,$15,"NA for Event",$11,$13 ;
     else if ( $7 == "eventType:rename" ) print $1,$7,"NA for Event",$8,$10,$11,$9,$12 ;
     else print $1,$7,"NA for Event",$8,$10,"NA for Event",$9,$11 ; }' >> "${loglist[$i]%.*}".tmp1
     rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
-    echo -e "-->  Log contains ${rec_count_2} records <--"
+    echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_2}${reset}${f_yellow} records${reset}"
   done
 elif [[ "${1}" == "delete" ]]; then
   for i in "${!loglist[@]}"; do
-    echo -e "--> Pulling delete events from ${loglist[$i]%.*}.. <--"
+    echo -e "${f_yellow}-->  Pulling delete events from ${loglist[$i]%.*}..${reset}"
     zcat "${loglist[$i]}" | awk -F">" 'BEGIN{OFS=">"} {
     if ( $7 == "eventType:delete" ) print $1,$7,$8,$10,$9,$11 ; }' \
     >> "${loglist[$i]%.*}".tmp1
     rec_count_2=$(wc -l "${loglist[$i]%.*}".tmp1 | awk -F" " '{ print $1 }')
     if [[ "${rec_count_2}" == "0" ]]; then
-      echo -e "-->  No delete events found, removing.. <--"
+      echo -e "${f_yellow}-->   No delete events found, removing..${reset}"
       rm -f "${loglist[$i]%.*}".tmp1
     else
-      echo -e "-->  Log contains ${rec_count_2} delete records <--"
+      echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_2}${reset}${f_yellow} delete records${reset}"
     fi
   done
 fi
@@ -365,9 +381,8 @@ fi
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 declare -a audres_list
 audres_list=( *.tmp1 )
-echo -e "\n"
 for i in "${!audres_list[@]}"; do
-  echo -e "--> Formatting fields from ${audres_list[$i]%.*}.. <--"
+  echo -e "${f_yellow}-->  Formatting fields from ${audres_list[$i]%.*}..${reset}"
   cat "${audres_list[$i]}" \
   | sed -nE 's/[[[:digit:]]{1,}: //gp' \
   | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
@@ -375,13 +390,13 @@ for i in "${!audres_list[@]}"; do
   | sed -nE 's/\\\\/\\/gp' \
   >> "${audres_list[$i]%.*}".tmp2
   rec_count_3="$(wc -l "${audres_list[$i]%.*}.tmp2" | awk -F" " '{ print $1 }')"
-  echo -e "-->  Log contains ${rec_count_3} records <--"
+  echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} records${reset}"
 done
 rm -f *.tmp1
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
-  echo -e "\n--> Building SID list.. <--"
+  echo -e "${f_yellow}-->  Building SID list..${reset}"
   for file in *.tmp2; do
     grep -Eo "${sidregex}" "${file}" >> ./sidlist.tmp
   done
@@ -390,14 +405,14 @@ if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
   sidcount=$(wc -l sidlist | awk -F" " '{ print $1 }')
   count=1
   while read -r SID; do
-    echo -e "--> Resolving SID ${count} of ${sidcount}.. <--"
+    echo -e "${f_yellow}-->  Resolving SID ${count} of ${sidcount}..${reset}"
     resolve_sid "${SID}"
     (( count++ ))
   done < sidlist
 fi
 
 cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
-echo -e "\n--> Updating records with UserID.. <--"
+echo -e "${f_yellow}-->  Updating records with UserID..${reset}"
 for log in ../*.tmp2; do
   for user in *; do
     sid="${user#*_}"
@@ -415,12 +430,11 @@ elif [[ "${1}" == "delete" ]]; then
 fi
 declare -a headerlist
 headerlist=( *.tmp3 )
-echo -e "\n"
 for i in "${!headerlist[@]}"; do
   echo "${header}" > "${headerlist[$i]%.*}".csv
   cat "${headerlist[$i]}" >> "${headerlist[$i]%.*}".csv
   rec_count_3=$(wc -l "${headerlist[$i]%.*}".csv | awk -F" " '{ print $1 }')
-  echo -e "--> Log contains ${rec_count_3} formatted records including new header <--"
+  echo -e "${f_yellow}-->  Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} formatted records including new header${reset}"
 done
 rm -f "${iaopath}"/*.tmp3
 rm -f header
@@ -431,36 +445,36 @@ done
 } # }}} End parse_log
 
 int_clean(){ # {{{ Clean up on Ctrl-C
-echo -e "\n\n*****************************************"
+echo -e "\n\n${f_green}*****************************************"
 echo -e "**  NOTICE: Interrupt signal detected  **"
-echo -e "*****************************************"
-echo -e "--> User aborted - Cleaning up <--"
+echo -e "*****************************************${reset}"
+echo -e "${f_red}-->  User aborted - Cleaning up"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done - Goodbye <--\n"
+echo -e "-->  Done - Goodbye\n${reset}"
 exit 1
 } # }}} End int_clean
 
 nd_clean(){ # {{{ Clean up after no data run
-echo -e "\n\n*******************************"
+echo -e "\n\n${f_green}*******************************"
 echo -e "**  NOTICE: No data matched  **"
-echo -e "*******************************"
+echo -e "*******************************${reset}"
 echo -e "Unfortunately, no data matched the search"
 echo -e "criteria provided. If this was a path search"
 echo -e "there may have been path elements missing."
-echo -e "--> Cleaning up <--"
+echo -e "${f_yellow}-->  Cleaning up"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
 fi
-echo -e "--> Done - Goodbye <--\n"
+echo -e "-->  Done - Goodbye\n${reset}"
 exit 0
 } # }}} End nd_clean
 
 comp_clean(){ # {{{ Clean up after successful run
-echo -e "\n\n***************************"
+echo -e "\n${f_green}***************************"
 echo -e "**  PROCESSING COMPLETE  **"
-echo -e "***************************"
+echo -e "***************************${reset}"
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 rm -rf online 2>/dev/null
 rm -rf user 2>/dev/null
@@ -470,21 +484,20 @@ rm -rf *.tmp* 2>/dev/null
 rm -rf sidlist 2>/dev/null
 tar cfz "${hts}"_AuditResults.tar.gz *.csv 2>/dev/null
 rm -rf *.csv 2>/dev/null
-cd "${HOME}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${HOME}"
 echo -e "The Audit result file(s) have been saved as:"
-echo -e "\n${iaopath}/${hts}_AuditResults.tar.gz\n"
+echo -e "\n${f_green}${iaopath}/${hts}_AuditResults.tar.gz\n${reset}"
 echo -e "which is a compressed tar archive."
 echo -e "You will need to copy it to your local system."
 echo -e "Once there, it needs to be uncompressed and"
 echo -e "unarchived. Then, it can be imported as a"
 echo -e "'>' delimited file in Excel or Google Sheets."
-echo -e "NOTE: Do not forget to remove the directory ${iaopath}"
-echo -e "after you have collected the results file.\n"
+echo -e "\n${f_yellow}NOTE: Do not forget to remove the directory ${iaopath}"
+echo -e "after you have collected the results file.\n${reset}"
 exit 0
 } # }}} End comp_cleanup
 
 error_exit(){ # {{{ Generic error handling
-echo "${1:-"Unknown Error"}" 1>&2
+echo "${f_red}${1:-"Unknown Error"}${reset}" 1>&2
 exit 1
 } # }}} End error_exit
 
@@ -504,9 +517,9 @@ if [[ "${user_cont}" == [yY] ]]; then
   prompt_stype
   show_selections
   while [ "${user_agree}" == "n" ]; do
-    echo -e "\n**********************"
+    echo -e "\n${f_green}**********************"
     echo -e "**  EDIT SELECTION  **"
-    echo -e "**********************"
+    echo -e "**********************${reset}"
     echo -e "Which entry would you like to change?\n"
     echo -e "[1] Start date/time"
     echo -e "[2] End date/time"
@@ -523,9 +536,9 @@ if [[ "${user_cont}" == [yY] ]]; then
       show_selections
       ;;
       3)
-      echo -e "\n-->  ----------------------------------------------------------  <--"
+      echo -e "\n${f_yellow}-->  ----------------------------------------------------------  <--"
       echo -e "-->  WARNING: Location changing, search type must be re-entered  <--"
-      echo -e "-->  ----------------------------------------------------------  <--"
+      echo -e "-->  ----------------------------------------------------------  <--${reset}"
       sleep 1
       prompt_sloc
       prompt_stype
@@ -537,7 +550,7 @@ if [[ "${user_cont}" == [yY] ]]; then
       ;;
     esac
   done
-  echo -e "\n--> User entries have been confirmed, continuing.. <--"
+  echo -e "\n${f_green}-->  User entries have been confirmed, continuing..${reset}"
   collect_logs
   if [[ $(ls "${iaopath}"/*.gz 2>/dev/null) ]]; then
     parse_log "${parse_arg}"

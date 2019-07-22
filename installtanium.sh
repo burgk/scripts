@@ -3,7 +3,7 @@
 # Date: 20190301
 # Kevin Burg - kevin.burg@state.co.us
 
-# Misc variable definions #{{{
+# Misc variable definions {{{
 # oitserverip=10.51.2.112
 oitserverip="10.51.50.101"
 publicserverip="165.127.219.171"
@@ -45,7 +45,9 @@ aws2_64="./TaniumClient-7.2.314.3476-1.amzn2.x86_64.rpm"
 aws2018_03_64="./TaniumClient-7.2.314.3476-1.amzn2018.03.x86_64.rpm"
 aws2017_09_64="./TaniumClient-7.2.314.3211-1.amzn2017.09.x86_64.rpm"
 aws2017_12_64="./TaniumClient-7.2.314.3211-1.amzn2017.12.x86_64.rpm"
-#}}}
+# End misc vars }}}
+
+# Functions {{{
 
 check_root() { #{{{
 if (( ${EUID} != 0 )); then
@@ -900,6 +902,8 @@ else
 fi
 } #}}}
 
+# End functions section }}}
+
 # Begin main tasks {{{
 check_root
 get_distro
@@ -940,5 +944,7 @@ else
   echo -e "${f_red}Unrecognized command line argument, exiting${reset}"
   exit 1
 fi
-# }}} End main tasks
+
 exit 0
+
+# }}} End main tasks
