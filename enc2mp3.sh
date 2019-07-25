@@ -21,8 +21,9 @@
 # 8 = ~85 - range: 70-105
 # 9 = ~65 - range: 45-85
 # }}}
-set -x
+
 # Various definitions {{{
+# set -x # enable debug mode
 IFS='\'
 input=${1}
 infilebase=${1%.*}
