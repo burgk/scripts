@@ -3,6 +3,11 @@
 # Date: 07/24/2019
 # Kevin Burg - kevin.burg@state.co.us
 
+# Misc variable definitions {{{
+trap "int_exit" 2 3
+vm_name_regex="^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
+vm_mem_regex="^[[:digit:]]{1,}$"
+
 # Terminal color defintions {{{
 # Define 8 bit foreground colors
 f_black="\e[1;30m"
@@ -28,9 +33,60 @@ b_white="\e[1;47m"
 reset="\e[0m"
 # }}}
 
-# Misc variable definitions {{{
+# }}} End functions
 
-# }}}
+# Functions {{{
+
+int_exit() { # {{{ Exit on Ctrl-c
+echo -e "\n\n${f_red}**************************"
+echo -e "**  INTERRUPT DETECTED  **"
+echo -e "**************************${reset}"
+echo -e "User interrupted! Exiting.\n\n"
+exit 1
+} # }}} End int_exit
+
+vm_name() { # {{{ Prompt/read vm name - vars: vm_name
+valid_hostname="false"
+while [[ "${valid_hostname}" == "false" ]]; do
+  echo -ne "Enter new VM name: "
+  echo -ne "${f_cyan}"
+  read -re vm_name
+  echo -ne "${reset}"
+  if [[ "${vm_name}" =~ $vm_name_regex ]]; then
+    valid_hostname="true"
+  else
+    echo -e "${f_red}-->  Invalid hostname, try again..${reset}"
+  fi
+done
+} # }}} End vm_name
+
+vm_mem(){ # {{{ Prompt for memory size - vars: vm_mem
+valid_vm_mem="false"
+sysmem=$(free -m | grep ^Mem | awk '{print $2}')
+while [[ "${valid_vm_mem}" == "false" ]]; do
+  echo -ne "Enter size of memory for new vm in MiB: "
+  echo -ne "${f_cyan}"
+  read -re vm_mem
+  echo -ne "${reset}"
+  if ! [[ "${vm_mem}" =~ $vm_mem_regex ]] ; then
+    echo -e "${f_red}-->  Invalid entry, try again..${reset}"
+  elif [[ "${vm_mem}" < "${sysmem}" ]]; then
+    valid_vm_mem="true"
+  else
+    echo -e "${f_red}-->  Value too large, try again..${reset}"
+  fi
+done
+} # }}} End vm_mem
+
+vm_diskpath() { # {{{ Prompt for disk path - var: vm_diskpath
+vm_diskpath="false"
+while [[ "${vm_diskpath}" == "false" ]]; do
+  echo -ne "Enter path to new vm disk image: "
+  echo -ne "${f_cyan}"
+  read -re vm_diskpath
+  echo -ne "${reset}"
+}
+# }}} End functions
 
 # Begin main tasks {{{
 cat <<HEADERMSG
@@ -39,9 +95,9 @@ cat <<HEADERMSG
 ************************
 HEADERMSG
 
-read -rep "VM Name: " vm_name
-read -rep "Memory: " vm_mem
-read -rep "Disk Path: " vm_disk_path
+vm_name
+vm_mem
+vm_diskpath
 read -rep "DisK Size: " vm_disk_size
 read -rep "VCPUs: " vm_cpus
 read -rep "OS Type: " vm_type
