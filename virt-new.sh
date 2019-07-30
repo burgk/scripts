@@ -7,7 +7,7 @@
 trap "int_exit" 2 3
 vm_name_regex="^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
 vm_mem_regex="^[[:digit:]]{1,}$"
-
+vm_cpu_regex="^[[:digit:]]{1,4}$"
 # Terminal color defintions {{{
 # Define 8 bit foreground colors
 f_black="\e[1;30m"
@@ -60,7 +60,7 @@ while [[ "${valid_hostname}" == "false" ]]; do
 done
 } # }}} End vm_name
 
-vm_mem(){ # {{{ Prompt for memory size - vars: vm_mem
+vm_mem() { # {{{ Prompt for memory size - vars: vm_mem
 valid_vm_mem="false"
 sysmem=$(free -m | grep ^Mem | awk '{print $2}')
 while [[ "${valid_vm_mem}" == "false" ]]; do
@@ -78,14 +78,40 @@ while [[ "${valid_vm_mem}" == "false" ]]; do
 done
 } # }}} End vm_mem
 
-vm_diskpath() { # {{{ Prompt for disk path - var: vm_diskpath
+vm_diskparam() { # {{{ Prompt for disk path - vars: vm_diskpath
 vm_diskpath="false"
+vm_disksize="false"
 while [[ "${vm_diskpath}" == "false" ]]; do
-  echo -ne "Enter path to new vm disk image: "
+  echo -ne "Enter path for new vm disk image: "
   echo -ne "${f_cyan}"
   read -re vm_diskpath
   echo -ne "${reset}"
-}
+  vm_diskpath="true"
+done
+while [[ "${vm_disksize}" == "false" ]]; do
+  echo -ne "Enter size for new disk: "
+  echo -ne "${f_cyan}"
+  read -re vm_disksize
+  echo -ne "${reset}"
+  vm_disksize="true"
+done
+} # }}} End vm_diskpath
+
+vm_cpu() { # {{{ Prompt for number of vcpus - vars: vm_cpu
+vm_cpu="false"
+while [[ "${vm_cpu}" == "false" ]]; do
+  echo -ne "Enter number of virtual cpus: "
+  echo -ne "${f_cyan}"
+  read -re vm_cpu
+  echo -ne "${reset}"
+  if [[ "${vm_cpu}" =~ $vm_cpu_regex ]]; then
+    vm_cpu="true"
+  else
+    echo -e "${f_red}--> Error: Invalid input, try again${reset}"
+  fi
+done
+} # }}} End vm_vcpus
+
 # }}} End functions
 
 # Begin main tasks {{{
@@ -97,9 +123,8 @@ HEADERMSG
 
 vm_name
 vm_mem
-vm_diskpath
-read -rep "DisK Size: " vm_disk_size
-read -rep "VCPUs: " vm_cpus
+vm_diskparam
+vm_cpu
 read -rep "OS Type: " vm_type
 read -rep "OS Variant: " vm_variant
 read -rep "Network type: " vm_network
