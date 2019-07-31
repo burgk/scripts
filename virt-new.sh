@@ -7,7 +7,7 @@
 trap "int_exit" 2 3
 vm_name_regex="^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$"
 vm_mem_regex="^[[:digit:]]{1,}$"
-vm_cpu_regex="^[[:digit:]]{1,4}$"
+vm_cpu_regex="^[[:digit:]]{1,2}$"
 # Terminal color defintions {{{
 # Define 8 bit foreground colors
 f_black="\e[1;30m"
@@ -55,7 +55,7 @@ while [[ "${valid_hostname}" == "false" ]]; do
   if [[ "${vm_name}" =~ $vm_name_regex ]]; then
     valid_hostname="true"
   else
-    echo -e "${f_red}-->  Invalid hostname, try again..${reset}"
+    echo -e "${f_red}-->  Error: Invalid hostname, try again..${reset}"
   fi
 done
 } # }}} End vm_name
@@ -98,6 +98,7 @@ done
 } # }}} End vm_diskpath
 
 vm_cpu() { # {{{ Prompt for number of vcpus - vars: vm_cpu
+set -x
 vm_cpu="false"
 while [[ "${vm_cpu}" == "false" ]]; do
   echo -ne "Enter number of virtual cpus: "
@@ -107,7 +108,7 @@ while [[ "${vm_cpu}" == "false" ]]; do
   if [[ "${vm_cpu}" =~ $vm_cpu_regex ]]; then
     vm_cpu="true"
   else
-    echo -e "${f_red}--> Error: Invalid input, try again${reset}"
+    echo -e "${f_red}-->  Error: Invalid cpu count, try again..${reset}"
   fi
 done
 } # }}} End vm_vcpus
@@ -149,4 +150,3 @@ else
   exit 1
 fi
 # }}}
-
