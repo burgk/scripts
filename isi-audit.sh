@@ -294,7 +294,7 @@ echo -e "Search location:  ${f_green}${user_zone} - ${user_ad}${reset}"
 if [[ "${user_stype}" == "User" ]]; then
   echo -e "Search type:      ${f_green}${user_stype} - ${user_suser}${reset}"
 else 
-  echo -e "Search type:      ${f_green}${user_stype} - ${user_spath}${reset}"
+  echo -ne "Search type:      ${f_green}"; echo -n "${user_stype} - ${user_spath}"; echo -e "${reset}"
 fi
 echo -e "\n"
 read -rep "Do your entries look correct [y|n]: " user_agree
