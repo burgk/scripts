@@ -341,8 +341,13 @@ else
   mkdir "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to mkdir ${iaopath}/user"
   cd "${iaopath}"/user 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}/user"
 fi
-res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
-touch "${res_user}"_"$1"
+res_user="$(isi auth users view --zone="${user_zone}" --sid="$1" 2>/dev/null | grep -w "Name:" | head -n1 | awk -F" " '{print $2}')"
+if [[ "${res_user}" ]]; then
+  touch "${res_user}"_"$1"
+else
+  res_user="$1"
+  touch "${res_user}"_"$1"
+fi
 } # End resolve_sid }}}
 
 parse_log(){ # {{{ Filter for relevant parts of audit record and format as csv for Excel/Google Sheets
