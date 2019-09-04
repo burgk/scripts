@@ -6,6 +6,7 @@
 # Misc variable definitions {{{
 pager1="/usr/bin/bat"
 pager2="/usr/bin/less"
+termsize="$(tput lines)"
 # }}} End misc vars
 
 # Begin main tasks {{{
@@ -14,25 +15,23 @@ if [[ $EUID -ne 0 ]]; then
   read -rep "Please re-run as root or via sudo, or enter y to continue anyway: " user_reply
 fi
 
-if [[ -e "${pager1}" ]]; then
+if [[ $(command -v "${pager1}") ]]; then
   pager="${pager1}"
-elif [[ -e "${pager2}" ]]; then
+elif [[ $(command -v "${pager2}") ]]; then
   pager="${pager2}"
 fi
 
-case "${user_reply}" in
-  y | Y)
-    grep -v ^# "${1}" | grep -v ^$ | "${pager}"
-  ;;
-  n | N)
-    echo -e "Ok, exiting"
-    exit 1
-  ;;
-  *)
-    echo -e "Unrecognized input! Exiting!"
-    exit 1
-  ;;
-esac
-
+if [[ "${user_reply}" == "y" ]]; then
+  output=$(grep -v -e '^ *#' -e '^$' "${1}")
+  outsize=$(wc -l "${output}")
+  if [[ "${outsize}" -ge "${termsize}" ]]; then
+    "${pager}" "${output}"
+  else
+    cat "${output}"
+  fi
+else
+  echo -e "Ok, exiting"
+  exit 1
+fi
 exit 0
 # }}} End main tasks
