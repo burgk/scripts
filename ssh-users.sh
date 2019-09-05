@@ -10,8 +10,8 @@
 
 # Misc Variable definitions # {{{
 # Verify or set as necessary for node or loghost
-ltoday="$(date +%b" "%d)"
-htoday="$(date +%b"-"%d)"
+ltoday="$(date +%b" "%e)"
+htoday="$(date +%b"-"%e)"
 month=$(date +%B)
 me=$(hostname -s)
 truetmpresult="/var/tmp/${me}-${htoday}-true"
