@@ -97,7 +97,7 @@ if [ $# -eq 1 ]
   if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ]
    then
     setcodescale
-    echo -e "${f_green}Encoding ${input} to ${output} at ${codescale}${reset}"
+    echo -e "${f_green}Encoding ${input} to ${output} at quality setting ${codescale}${reset}"
     encodefile
     exit 0
   else
