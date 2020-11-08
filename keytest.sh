@@ -1,6 +1,7 @@
 #!/usr/bin/sh
 # Kevin Burg - burg.kevin@gmail.com
 # Don't remember where I found this...
+
 shopt -s extglob
 
 while read key; do
