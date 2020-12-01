@@ -173,7 +173,7 @@ echo -e "Found major version: ${majversion}"
 echo -e "This is not a supported combination, exiting."
 echo -e "${reset}"
 exit 1
-#}}}
+} #}}}
 
 validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then

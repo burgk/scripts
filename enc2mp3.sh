@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Purpose: Wrapper for ffmpeg to convert ogg and opus files to .mp3 files
-# Date: 20180321
+# Purpose: Wrapper for ffmpeg to convert ogg, opus, wma and m4a  files to .mp3 files
+# Date: 20201201
 # Kevin Burg - burg.kevin@gmail.com
 
 # Comments {{{
@@ -39,7 +39,7 @@ if command -v ffmpeg > /dev/null 2>&1
  then
   ff=$(command -v ffmpeg)
  else
-  echo -e "${f_red}ffmpeg not found, exiting${reset}"
+  echo -e "${f_red}Error: ffmpeg not found, exiting${reset}"
   exit 1
 fi
 
@@ -47,13 +47,12 @@ if command -v mediainfo > /dev/null 2>&1
  then
   mi=$(command -v mediainfo)
  else
-  echo -e "${f_red}mediainfo not found, exiting${reset}"
+  echo -e "${f_red}Error: mediainfo not found, exiting${reset}"
   exit 1
 fi
 # }}}
 
-setcodescale() # {{{
-{
+setcodescale() { # {{{
 # let "bitrate = $(${mi} --Inform="General;%OverallBitRate%" ${input}) / 1000"
 (( bitrate = $(${mi} --Inform="General;%OverallBitRate%" "${input}") / 1000 ))
 if [ ${bitrate} -lt "65" ]
@@ -79,22 +78,21 @@ elif [ ${bitrate} -lt "245" ]
 fi
 } # }}}
 
-encodefile() # {{{
-{
-${ff} -hide_banner -loglevel info -i "${input}" -acodec libmp3lame -qscale:a ${codescale}  -map_metadata 0:s:0 "${output}"
+encodefile() { # {{{
+${ff} -hide_banner -loglevel error -i "${input}" -acodec libmp3lame -qscale:a ${codescale}  -map_metadata 0:s:0 "${output}"
 } # }}}
 
-errormsg() # {{{
-{
+errormsg() { # {{{
 echo -e "${f_red}Usage: $(basename "$0") <inputfile>"
-echo -e "Currently ogg and opus files are suported"
+echo -e "Currently ogg, opus, wma and m4a files are suported"
 echo -e "Requires ffmpeg and mediainfo to be installed${reset}"
 } # }}}
 
 # Begin main tasks {{{
 if [ $# -eq 1 ]
  then
-  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ]
+   if [ "${infilebase}" != mp3 ]
+#  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ] || [ "${infileext}" = m4a ] || [ "${infileext}" = wma ]
    then
     setcodescale
     echo -e "${f_green}Encoding ${input} to ${output} at quality setting ${codescale}${reset}"
