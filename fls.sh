@@ -1,0 +1,876 @@
+#!/usr/bin/env bash
+
+# --- STANDARD SCRIPT-GLOBAL CONSTANTS
+
+kTHIS_HOMEPAGE='https://github.com/mklement0/fls'
+kTHIS_NAME=${BASH_SOURCE##*/}
+kTHIS_VERSION='v0.3.3' # NOTE: This assignment is automatically updated by `make version VER=<newVer>` - DO keep the 'v' prefix.
+
+unset CDPATH  # To prevent unexpected `cd` behavior.
+
+# --- Begin: STANDARD HELPER FUNCTIONS
+
+die() { echo "$kTHIS_NAME: ERROR: ${1:-"ABORTING due to unexpected error."}" 1>&2; exit ${2:-1}; }
+dieSyntax() { echo "$kTHIS_NAME: ARGUMENT ERROR: ${1:-"Invalid argument(s) specified."} Use \`$kTHIS_NAME -h\` for help." 1>&2; exit 2; }
+
+# SYNOPSIS
+#   openUrl <url>
+# DESCRIPTION
+#   Opens the specified URL in the system's default browser.
+openUrl() {
+  local url=$1 platform=$(uname) cmd=()
+  case $platform in
+    'Darwin') # OSX
+      cmd=( open "$url" )
+      ;;
+    'CYGWIN_'*) # Cygwin on Windows; must call cmd.exe with its `start` builtin
+      cmd=( cmd.exe /c start '' "$url " )  # !! Note the required trailing space.
+      ;;
+    'MINGW32_'*) # MSYS or Git Bash on Windows; they come with a Unix `start` binary
+      cmd=( start '' "$url" )
+      ;;
+    *) # Otherwise, assume a Freedesktop-compliant OS, which includes many Linux distros, PC-BSD, OpenSolaris, ...
+      cmd=( xdg-open "$url" )
+      ;; 
+  esac
+  "${cmd[@]}" || { echo "Cannot locate or failed to open default browser; please go to '$url' manually." >&2; return 1; }
+}
+
+# Prints the embedded Markdown-formatted man-page source to stdout.
+printManPageSource() {
+  sed -n -e $'/^: <<\'EOF_MAN_PAGE\'/,/^EOF_MAN_PAGE/ { s///; t\np;}' "$BASH_SOURCE"
+}
+
+# Opens the man page, if installed; otherwise, tries to display the embedded Markdown-formatted man-page source; if all else fails: tries to display the man page online.
+openManPage() {
+  local pager embeddedText 
+  if ! man 1 "$kTHIS_NAME" 2>/dev/null; then
+    # 2nd attempt: if present, display the embedded Markdown-formatted man-page source
+    embeddedText=$(printManPageSource)
+    if [[ -n $embeddedText ]]; then
+      pager='more'
+      command -v less &>/dev/null && pager='less' # see if the non-standard `less` is available, because it's preferable to the POSIX utility `more`
+      printf '%s\n' "$embeddedText" | "$pager"
+    else # 3rd attempt: open the the man page on the utility's website
+      openUrl "${kTHIS_HOMEPAGE}/doc/${kTHIS_NAME}.md"
+    fi
+  fi  
+}
+
+# Prints the contents of the synopsis chapter of the embedded Markdown-formatted man-page source for quick reference.
+printUsage() {
+  local embeddedText
+  # Extract usage information from the SYNOPSIS chapter of the embedded Markdown-formatted man-page source.
+  embeddedText=$(sed -n -e $'/^: <<\'EOF_MAN_PAGE\'/,/^EOF_MAN_PAGE/!d; /^## SYNOPSIS$/,/^#/{ s///; t\np; }' "$BASH_SOURCE")
+  if [[ -n $embeddedText ]]; then
+    # Print extracted synopsis chapter - remove backticks for uncluttered display.
+    printf '%s\n\n' "$embeddedText" | tr -d '`'
+  else # No SYNOPIS chapter found; fall back to displaying the man page.
+    echo "WARNING: usage information not found; opening man page instead." >&2
+    openManPage
+  fi
+}
+
+# --- End: STANDARD HELPER FUNCTIONS
+
+# ---  PROCESS STANDARD, OUTPUT-INFO-THEN-EXIT OPTIONS.
+case $1 in
+  --version)
+    # Output version number and exit, if requested.
+    echo "$kTHIS_NAME $kTHIS_VERSION"$'\nFor license information and more, visit '"$kTHIS_HOMEPAGE"; exit 0
+    ;;
+  -h|--help)
+    # Print usage information and exit.
+    # !! -h is a valid option for ls that we normally must pass through, 
+    # !! so we accept it as an alias for --help ONLY if
+    # !! it's the only argument; we can do this, because -h by itself
+    # !! makes no sense in ls (it must be combined with -l).
+    (( $# == 1 )) && { printUsage; exit; }
+    ;;
+  --man)
+    # Display the manual page and exit, falling back to printing the embedded man-page source.
+    openManPage; exit
+    ;;
+  --man-source) # private option, used by `make update-man`
+    # Print raw, embedded Markdown-formatted man-page source and exit
+    printManPageSource; exit
+    ;;
+  --home)
+    # Open the home page and exit.
+    openUrl "$kTHIS_HOMEPAGE"; exit
+    ;;
+esac
+
+# --- BEGIN: Functions
+
+# SYNOPSIS
+#     indexOf needle "${haystack[@]}"
+# *Via stdout*, returns the zero-based index of a string element in an array of strings or -1, if not found.
+# The *return code* indicates if the element was found or not.
+# EXAMPLE
+#   a=('one' 'two' 'three')
+#   ndx=$(indexOf 'two' "${a[@]}") # -> $ndx is now 1
+indexOf() {
+  local e ndx=-1
+  for e in "${@:2}"; do (( ++ndx )); [[ "$e" == "$1" ]] && echo $ndx && return 0; done
+  echo '-1'; return 1
+}
+
+# SYNOPSIS
+#   isIn needle "${haystack[@]}"
+# Indicates via *exit code only* if string NEEDLE is contained in array HAYSTACK.
+# EXAMPLE
+#  a=('one' 'two' 'three')
+#  isIn 'two' "${a[@]}" && echo "contained"
+isIn() { indexOf "$@" >/dev/null; }
+
+# SYNOPSIS
+#   intersection list1 list2 [sep [outsep]]
+# Returns the - sorted - intersection of tokens in 2 input lists.
+# SEP is the separator used to separate tokens in the input list, OUTSEP the separator to use when printg the results.
+# SEP defaults to a newline, and OUTSEP to the value of SEP.
+# If SEP is explicitly given as the empty string, the input lists are broken into individual *characters*.
+# Note that any nonempty result will have a trailing instance of OUTSEP.
+# CAVEATS:
+#   - NOT LOCALE-AWARE on OSX: both awk and sort do not deal properly with UTF-8 encoded non-ASCII characters.
+#   - This function is expensive, because external utilities are called multiple times: to tokenize, sort, and compare
+# EXAMPLES:
+#   intersection hello world '' # -> 'lo' (the sorted list of chars. that 'hello' and 'world' have in common)
+intersection() {
+  local list1=$1 list2=$2 sep=${3-$'\n'} outsep=${4:-$sep}
+  [[ $sep == $'\n' ]] && sep='\n'
+  [[ $outsep == $'\n' ]] && outsep='\n'
+  comm -12 <(awk 'BEGIN { FS="'"$sep"'" } { for(i=1;i<=NF;++i) print $i }' <<<"$list1" | sort) <(awk 'BEGIN { FS="'$sep'" } { for(i=1;i<=NF;++i) print $i }' <<<"$list2" | sort) | awk -v ORS="$outsep" '1'
+}
+
+# SYNOPSIS
+#   charInstanceCount <char> <text>
+# DESCRIPTION
+#   Counts the number of instances of <char> in <text>.
+charInstanceCount() {
+  local instances=$(tr -Cd "${1:0:1}" <<<"$2")
+  echo "${#instances}"
+}
+
+# SYNOPSIS
+#   hasDuplicateChars charList
+# DESCRIPTION
+#   Indicates via exit code if the specified list of chars. (a string of chars. without separators) contains duplicate chars. or not.
+# CAVEATS
+#   BSD awk is not UTF8-aware.
+hasDuplicateChars() {
+  awk -v FS= 'BEGIN { haveDups=0 }{ for(i=1;i<=NF;++i) if (seen[$i]++) { haveDups=1; exit } } END { exit ! haveDups }' <<<"$*"
+}
+
+# SYNOPIS
+#   isEmpty dirOrFile
+# DESCRIPTION
+#   Indicates if the specified file or directory is fully empty (exit code 0) or not (exit code 1).
+#   Note that if the argument is a symlink, the empty test invariably applies to the link's TARGET.
+#   The file or directory must exist, otherwise an error message is printed and the exit code is set to 3.
+#   - For files, empty means: a size of 0 bytes.
+#   - For directories, empty means: it must not contain any files or subdirectories, whether hidden or not.
+# EXAMPLE
+#  isEmpty ~/Applications && echo "~/Applications is completely empty."
+isEmpty() {
+  if [[ -d $1 ]]; then
+    (shopt -s nullglob dotglob; for f in "${1%/}"/*; do exit 1; done; exit 0)
+  elif [[ -f $1 ]]; then
+    [[ ! -s $1 ]]
+  else
+    echo "$FUNCNAME: $1: No such file or directory" >&2
+    return 3
+  fi
+}
+
+# SYNOPIS
+#   isNonEmpty dirOrFile
+# DESCRIPTION
+#   Inverse of isEmpty(); see there.
+isNonEmpty() {
+  isEmpty "$@"
+  case $? in
+    0)
+      return 1
+      ;;
+    1)
+      return 0
+      ;;
+    *)
+      return  # error must have occurred: pass exit code through
+  esac
+}
+
+# --- END: Functions
+
+# --- MAIN BODY
+
+declare filterExpr= firstArgWasOperand=0 unambiguousFilter=0 unfiltered=0 includeHidden=0 includeDotAndDotDot=0 listDirItself=0
+
+# All options will be passed through to `ls`, however, we need to determine 
+# if the option to include hidden entries was specified (-a or -A), because 
+# we need to perform our internal globbing accordingly, and also whether -d was specified.
+# Also, we allow GNU-style mixing of options and operands, but pass all options *before* operands when invoking ls, as the latter may
+# not support mixing, e.g., on OSX. 
+declare -a optsForLs=()
+# ----- BEGIN: OPTIONS PARSING
+#  - After the end of options parsing, $@ only contains the operands (non-option arguments), if any.
+operands=() argNdx=1 i=0 optName= isLong=0 prefix= optArg= haveOptArgAttached=0 haveOptArgAsNextArg=0 acceptOptArg=0 needOptArg=0
+while (( $# )); do
+  if [[ $1 =~ ^(-)[a-zA-Z0-9]+.*$ || $1 =~ ^(--)[a-zA-Z0-9]+.*$ ]]; then # an option: either a short option / multiple short options in compressed form or a long option
+    optsForLs+=( "$1" )
+    prefix=${BASH_REMATCH[1]}; [[ $prefix == '--' ]] && isLong=1 || isLong=0
+    for (( i = 1; i < (isLong ? 2 : ${#1}); i++ )); do
+        acceptOptArg=0 needOptArg=0 haveOptArgAttached=0 haveOptArgAsNextArg=0 optArgAttached= optArgOpt= optArgReq=
+        if (( isLong )); then # long option: parse into name and, if present, argument
+          optName=${1:2}
+          [[ $optName =~ ^([^=]+)=(.*)$ ]] && { optName=${BASH_REMATCH[1]}; optArgAttached=${BASH_REMATCH[2]}; haveOptArgAttached=1; }
+        else # short option: *if* it takes an argument, the rest of the string, if any, is by definition the argument.
+          optName=${1:i:1}; optArgAttached=${1:i+1}; (( ${#optArgAttached} >= 1 )) && haveOptArgAttached=1
+        fi
+        (( haveOptArgAttached )) && optArgOpt=$optArgAttached optArgReq=$optArgAttached || { (( $# > 1 )) && { optArgReq=$2; haveOptArgAsNextArg=1; }; }
+        # ---- BEGIN: CUSTOMIZE HERE
+        # !! In theory, we need to explicitly deal with *short* options with *optional* arguments so we can distinguish between more compressed options
+        # !! and a trailing optional argument.
+        # !! In practice, BSD ls has no such options (as of OSX 10.10), and neither does GNU ls as of coreutils 8.32 (the only optional option-argument
+        # !! exits for --color[=when], but there's no short synonym for --color).
+        case $optName in
+          a|all)
+            includeHidden=1
+            includeDotAndDotDot=1 # also include . and ..
+            ;;
+          A|almost-all)
+            includeHidden=1
+            ;;
+          d|directory)
+            listDirItself=1
+            ;;
+        esac
+        # ---- END: CUSTOMIZE HERE
+        (( needOptArg )) && { (( ! haveOptArgAttached && ! haveOptArgAsNextArg )) && dieSyntax "Option ${prefix}${optName} is missing its argument." || (( haveOptArgAsNextArg )) && shift; }
+        (( acceptOptArg || needOptArg )) && break
+    done
+  else # an operand
+    if [[ $1 == '--' ]]; then # end-of-options signifier
+      case ${#operands[@]} in
+        0) # first operand is '--'? -> UNfiltered output requested
+          unfiltered=1
+          ;;
+        1) # first operand is *followed* by '--'? -> unambiguously a filter
+          unambiguousFilter=1
+          ;;
+      esac
+      optsForLs+=( "$1" )
+      shift; operands+=( "$@" ); break # all remaining arguments are by definition operands
+    else # regular operand
+      (( argNdx == 1 )) && firstArgWasOperand=1
+      operands+=( "$1" ) # continue
+    fi
+  fi
+  shift
+  (( ++argNdx ))
+done
+(( "${#operands[@]}" > 0 )) && set -- "${operands[@]}"; unset operands argNdx i optName isLong prefix optArgAttached haveOptArgAttached haveOptArgAsNextArg acceptOptArg needOptArg
+# ----- END: OPTIONS PARSING: "$@" now contains all operands (non-option arguments).
+
+# Unfiltered output can be requested in 2 ways:
+#  - specifying '--' as the first operand (non-option argument): handled above
+#  Not specifying any operands at all.
+(( $# == 0 )) && unfiltered=1
+
+# PARSE THE (PRESUMPTIVE) FILTER EXPRESSION, if any.
+if (( ! unfiltered )); then
+
+  # A filter can be unambiguously specified in two ways:
+  #  - following the first operand (the filter) with '--' (handled above)
+  #  - specifying it as the very first argument followed by options.
+  (( firstArgWasOperand && ${#optsForLs[@]} > 0 )) && unambiguousFilter=1 # first operand is also first argument -> unambiguously a filter
+
+  # Proceed on either the knowledge (unambiguousFilter == 1) or assumption that the 
+  # first operand is the filter expression.
+  filterExpr=$1; shift
+
+  declare errMsg=
+  while :; do  # dummy loop for easily breaking out of the flow below
+    # Validate the filter-operator characters.
+    # The list of file-test operators as of bash 4.3 (from man bash):
+    # (-t was removed, because it relates to terminals, not files
+    #  -a and -e (synonyms) were removed, because they relate only test the *existence* of *any type* of file, so they don't serve to *filter by type*)
+           # -b ... block special file
+           # -c ... character special file
+           # -d ... dir or symlink to file
+           # -f ... regular file or symlink to regular file
+           # -g ... set-group-id permissions bit set
+           # -h ... symbolic link (same as -L)
+           # -k ... sticky permissions bit set
+           # -p ... named pipe (FIFO).
+           # -r ... readable by current user
+           # -s ... file (not dir) with nonzero size
+           # -u ... set-user-id permissions bit set.
+           # -w ... writable by current user
+           # -x ... executable by current user
+           # -G ... owned by the effective group ID
+           # -L ... symbolic link (same as -h)
+           # -N ... file has been modified since it was last read
+           # -O ... owned by the effective user ID
+           # -S ... a socket.
+    # The fundamental filesystem types, except symlinks (a symlink may be pointing to any of these types)
+    # Among the *positive* filters, only *one* of these makes sense.
+    kFILE_TEST_OPERATORS_TYPES=( f d b c p S )
+    # The symlink ID chars.
+    kFILE_TEST_OPERATORS_SYMLINK=( h L )
+    # The supplemental operators that can apply to any of the fundamental types (but NOT to a symlink itself - Bash apparently always applies them to the symlink *target*)
+    kFILE_TEST_OPERATORS_ATTRIBUTES=( g k r s u w x G N O )
+    # All operators.
+    kFILE_TEST_OPERATORS=( "${kFILE_TEST_OPERATORS_TYPES[@]}" "${kFILE_TEST_OPERATORS_SYMLINK[@]}" "${kFILE_TEST_OPERATORS_ATTRIBUTES[@]}" )
+    #
+    # Our custom operators, which we'll map onto Bash's below.
+    # - A custom alias we accept for convience in addition to Bash's 'L' or 'h') - note that `find` also accepts 'l' for its -type primary
+    kCUSTOM_FILE_TEST_OPERATOR_SYMLINK='l'
+    # - A custom alias we accept in addition to Bash's 'S' - but note that that means that we're effectively redefining Bash's 's', which has is-a-non-empty-file semantics.
+    kCUSTOM_FILE_TEST_OPERATOR_SOCKET='s'
+    # - Emptiness (zero bytes or empty dir.) expressed *positively* - the inverse of Bash's 's' operator (for files);
+    #   note that 'e' is Bash's *existence* operator, but since use of that operator by this utility makes no sense - 
+    #   by definition only existing items are examined - we're free to repurpose it here.
+    kCUSTOM_FILE_TEST_OPERATOR_EMPTY='e'
+
+
+    # Split into positive and negative filters, if specified.
+    (( $(charInstanceCount '^' "$filterExpr") <= 1 )) || { errMsg='You may only specify ^, the negation operator, once.'; break; }
+    declare posFilterChars negFilterChars
+    IFS=^ read -r posFilterChars negFilterChars <<<"$filterExpr"
+
+    # Map our CUSTOM OPERATORS onto their Bash equivalents.
+    # - 'l' -> 'L' - simple mapping
+    posFilterChars=${posFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_SYMLINK/L}
+    negFilterChars=${negFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_SYMLINK/L}
+    # - 's' -> 'S' - simple mapping 
+    posFilterChars=${posFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_SOCKET/S}
+    negFilterChars=${negFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_SOCKET/S}
+    # - In the case of 'e', it gets more complicated, because 'e' is the *inverse* of 's',
+    #   so we must map *and* move between negative and positive filters:
+    #   'e' -> '^s' and '^e' -> 's'
+    declare lenBefore
+    if [[ ${posFilterChars/$kCUSTOM_FILE_TEST_OPERATOR_EMPTY/} != "$posFilterChars" ]]; then
+      lenBefore=${#posFilterChars}
+      posFilterChars=${posFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_EMPTY/}
+      (( lenBefore - ${#posFilterChars} == 1 )) || { errMsg='Filter expression contains duplicate filters.'; break; }
+      negFilterChars+='s'
+    fi
+    if [[ ${negFilterChars/$kCUSTOM_FILE_TEST_OPERATOR_EMPTY/} != "$negFilterChars" ]]; then
+      lenBefore=${#negFilterChars}
+      negFilterChars=${negFilterChars//$kCUSTOM_FILE_TEST_OPERATOR_EMPTY/}
+      (( lenBefore - ${#negFilterChars} == 1 )) || { errMsg='Filter expression contains duplicate filters.'; break; }
+      posFilterChars+='s'
+    fi
+
+    # Make sure that there's no overlap between the positive and the negative filters
+    # which would invariably match nothing; e.g., "d^d"
+    if [[ -n $posFilterChars && -n $negFilterChars ]]; then
+      [[ -z $(intersection "$posFilterChars" "$negFilterChars" "") ]] || { errMsg='A filter cannot be its own negation.'; break; }
+    fi
+
+    # See if 's', the nonempty files/dirs filter was specified: 
+    # Note: As a bash file-test operator, -s (test if nonempty) only meaningfully operates on
+    #       *files*, not directories.
+    #      However, in our case we want the ability to filter by empty *directories*
+    #      too, so we must treat this case specially, via a custom function.
+    declare -i haveEmptyItemsFilter=0 haveNonEmptyItemsFilter=0
+    [[ ${posFilterChars//s/} != "$posFilterChars" ]] && { haveNonEmptyItemsFilter=1; posFilterChars=${posFilterChars//s/}; }
+    [[ ${negFilterChars//s/} != "$negFilterChars" ]] && { haveEmptyItemsFilter=1; negFilterChars=${negFilterChars//s/}; }
+
+    # Make sure that an actual filter was specified, and not just the negation operator, ^.
+    [[ -z $posFilterChars && -z $negFilterChars ]] && (( haveEmptyItemsFilter == 0 && haveNonEmptyItemsFilter == 0 )) && { errMsg='You cannot use ^ by itself.'; break; }
+
+    # Read the operator chars. into character *arrays*.
+    declare -a posFileTestOps=() negFileTestOps=()
+    [[ -n $posFilterChars ]] && IFS=$'\n' read -d '' -ra posFileTestOps <<<"$(awk 'BEGIN { FS="" } { for(i=1;i<=NF;++i) print $i  }' <<<"$posFilterChars")"
+    [[ -n $negFilterChars ]] && IFS=$'\n' read -d '' -ra negFileTestOps <<<"$(awk 'BEGIN { FS="" } { for(i=1;i<=NF;++i) print $i  }' <<<"$negFilterChars")"
+    allFileTestOps=( "${posFileTestOps[@]}" "${negFileTestOps[@]}" )
+
+    # Make sure that filters aren't specified more than once.
+    hasDuplicateChars "${posFilterChars}${negFilterChars}" || ( isIn 'h' "${allFileTestOps[@]}" && isIn 'L' "${allFileTestOps[@]}" ) && { errMsg='Filter expression contains duplicate filters.'; break; }
+
+    # Make sure that:
+    # - no unknown operators were specified 
+    for char in "${allFileTestOps[@]}"; do
+      case $char in
+        $kCUSTOM_FILE_TEST_OPERATOR_SYMLINK)
+
+          ;;
+      esac
+      isIn "$char" "${kFILE_TEST_OPERATORS[@]}" || { errMsg="Unknown or unsupported filter: '$char'"; break 2; }
+    done
+
+    # Make sure that:
+    # - among the positive test operators, at most *one* fundamental type is specified (e.g, EITHER 'f' OR 'd', as both doesn't make sense)
+    #   (among the negative filters, it does make sense to exclude multiple types, such as `^cp` to exclude items that are NEITHER a character-special file NOR a named pipe)
+    declare -i typeCount=0
+    for char in "${posFileTestOps[@]}"; do
+      isIn "$char" "${kFILE_TEST_OPERATORS_TYPES[@]}" && (( ++typeCount ))
+    done
+    (( typeCount > 1 )) && { errMsg='Mutually exclusive positive filters.'; break; }
+
+    # Note:
+    #  listDirItself (-d with a *single* dir to only list that dir *itself*) typically requires no filter,
+    #  and technically makes sense with only a few; 'f', for instance, makes no sense.
+    #  However, given that -d is a general ls option that users may routinely specify, 
+    #  such as with a glob that *happens to* match only 1 directory, we only report a *warning*,
+    #  not an error - and we do so even if the filter wasn't explicitly specified as such.
+    if (( listDirItself )); then
+      if ( (( typeCount == 1 )) && ! isIn 'd' "${posFileTestOps[@]}" ) || isIn 'd' "${negFileTestOps[@]}"; then
+        echo "WARNING: -d applied to a single directory targets only that directory, so a non-directory filter invariably matches nothing." >&2
+      fi
+    fi
+
+    break # exit the dummy loop
+
+  done  # dummy loop
+
+  if [[ -n $errMsg ]]; then # INVALID filter
+
+    if (( unambiguousFilter )); then
+      # We know that the filter was explicitly specified as such, so we 
+      # report an error and exit.
+      dieSyntax "INVALID FILTER: $errMsg"
+    else
+      # The putative filter wasn't specified unambiguously as one, so we 
+      # assume that it is a file operand instead and that NO filter is to
+      # be applied.
+      # Note that for consistency we do that even if that file operand is not
+      # an existing file/dir either - we'll let ls report its normal error later.
+      # The slight downside is that if the user meant to specify a filter
+      # that happens to be invalid, it will be treated as a file operand 
+      # without comment.
+      # Restore the value as the first operand.
+      set -- "$filterExpr" "$@"
+      unfiltered=1 filterExpr=      
+    fi
+
+  else # VALID filter
+
+    # Warn, if the filter was not unambiguously specified and there's also
+    # a filesystem item of the same name.
+    if [[ $unambiguousFilter -eq 0 && ( -e $filterExpr || -L $filterExpr ) ]]; then
+      ftype='file'
+      if [[ -L $filterExpr ]]; then
+        ftype='symlink'
+      elif [[ -d $filterExpr ]]; then
+        ftype='directory'
+      fi
+      cat <<EOF >&2
+WARNING: '$filterExpr' treated as filter, but also exists as a $ftype.
+         To target the latter, specify '--' as the first operand.
+EOF
+    fi
+
+  fi
+
+fi # (( ! unfiltered ))
+
+# DETERMINE CANDIDATE FILES - globbing
+# Configure globbing:
+  # Report no error on failure to match, and to return empty string instead.
+shopt -u failglob; shopt -s nullglob 
+  # Decide whether to include hidden files or not.
+(( includeHidden )) && shopt -s dotglob || shopt -u dotglob
+
+# Examine the operands, which must be filesystem items, namely:
+#  - EITHER: a SINGLE directory whose CONTENT is to be filtered
+#  - OR: a LIST of files or directories from a SINGLE PARENT DIRECTORY to be filtered THEMSELVES.
+# Gather all *candidate* files first, to be filtered later.
+candidateFiles=()
+if [[ $# -eq 0 || ($# -eq 1 && -d "$1") ]]; then # a single dir. or no file operands specified at all, implying the current dir.
+
+  if (( listDirItself )); then  # list information about the directory *itself* (as opposed to its contents)
+    candidateFiles=( "${1:-.}" )
+  else                          # list information about the directory's *contents*
+    if [[ -n $1 ]]; then
+      # Switch to dir. *before globbing* with just *, which
+      # we must do in order to obtain *filenames only*.
+      cd -- "$1" || die
+    fi
+
+    # If -a (--all) was specified, we have to include . and ..
+    if (( includeDotAndDotDot )); then
+      # Sadly, * does NOT include . ad .. and we canNOT blindly assume that . and .. are the FIRST 2 entries, as names such as '#file'
+      # would sort before them. The pragmatic solution is to use `ls -a1` to get all entries, even though that means
+      # that filenames with embedded newlines won't be handled properly.
+      IFS=$'\n' read -d '' -ra candidateFiles <<EOF
+$(ls -a1)
+EOF
+    else
+      # Get all items in the dir by globbing (which will return filenames only).
+      candidateFiles=( * )
+    fi
+  fi
+
+else # *multiple* file operands given - typically the result of globbing on the command line - or, atypically, a single *file*, or a non-existing path
+
+  # WE MUST MAKE SURE THAT ALL OPERANDS ARE ITEMS FROM THE SAME PARENT DIRECTORY.
+  # Note that a true, robust determination accounting for variations in case
+  # non-normalized paths, ... would be non-trivial, but is overkill here,
+  # given that the most likely use case is that the list of operands passed
+  # is the result of automatically applied *globbing* by the shell on the
+  # command line.
+  # Thus, all we do here is to ensure that all operands have either no
+  # path prefix at all or the same one, literally.
+  # !! Note: We do NOT use `dirname` and `basename` in the LOOP - invoking them on 
+  # !! each of many files causes performance problems; shell expansions are used instead.
+
+  declare -i i=0
+  for f; do # Loop over file operands  
+    # Note: We do NOT test the existence of each operand here, as we ultimately
+    #       want `ls` to report errors about them - see below.
+    f=${f%/} # trim trailing '/'
+    filename=${f##*/}  # extract *mere filename*
+    pathPrefix=${f%"$filename"} # !! Note the double-quoting of $filename to ensure treatment as literal.
+    [[ $i -eq 0 || "$prevPathPrefix" == "$pathPrefix" ]] || dieSyntax "If you specify multiple file operands, they must all have the same parent directory."
+    candidateFiles+=( "$filename" )  # Add the *mere filename* to the list of candidate files.
+    prevPathPrefix=$pathPrefix
+    (( ++i ))
+  done
+
+  # Switch to dir., since we'll be passing *mere filenames* to `ls` later.
+  # We simply use the first operand, given that we've verified above that all operands are from the same dir.
+  targetDir=$(dirname -- "$1")
+  if [[ -d "$targetDir" ]]; then
+    cd -- "$targetDir" || die
+  else # target dir. doesn't exist
+    # !! Since we want ls to report errors, we simply pass the original paths through, knowing that none of them
+    # !! will exist (since we've ensure that all have the same dir. path and that path doesn't exist) and ls will
+    # !! report them as errors.
+    candidateFiles=( "$@" )
+  fi
+
+fi
+
+# FILTER, if requested, and OUTPUT.
+if (( unfiltered )); then
+    
+    # We CANNOT just relay invocation to `ls` due to our differing behavior of:
+    #   - never descending into directories (that alone could easily be remedied with -d, however)
+    #   - only ever printing *mere filenames*
+    # Thus, we take the same path as with filtering, except that we simply pass ALL candidate files through.
+    files=( "${candidateFiles[@]}" )
+
+else  # apply filters
+
+    # Note: file-test operators stored in variables aren't recognized by bash,
+    #       so we must resort to `eval`. While `eval` should be avoided in general,
+    #       it's safe to use here, because we fully control the string passed to it.
+  posExpr=
+  negExpr=
+  # Positive filters: AND logic: CONjunction of operands.
+  for char in "${posFileTestOps[@]}"; do
+    posExpr+="${posExpr:+ && }-$char \$f"
+  done
+  # Negative filters: NEITHER / NOR logic: DISjunction of operands that is NEGATED AS A WHOLE.
+  for char in "${negFileTestOps[@]}"; do
+    negExpr+="${negExpr:+ || }-$char \$f"
+  done
+
+  # Synthesize the combined conditional
+  filterConditional=
+  if [[ -n $posExpr && -n $negExpr ]]; then
+    filterConditional+="[[ $posExpr && ! ($negExpr) ]]"
+  elif [[ -n $posExpr ]]; then
+    filterConditional+="[[ $posExpr ]]"
+  elif [[ -n $negExpr ]]; then
+    filterConditional+="[[ ! ($negExpr) ]]"
+  fi
+
+  # Append the empty-items filter, if any.
+  (( haveEmptyItemsFilter )) && filterConditional+="${filterConditional:+ && }isEmpty \"\$f\""
+  (( haveNonEmptyItemsFilter )) && filterConditional+="${filterConditional:+ && }isNonEmpty \"\$f\""
+
+  # Loop over all items in the dir. and build an array comprising the subset 
+  # of items that match ALL the filters specified.
+  files=()
+  for f in "${candidateFiles[@]}"; do
+    # Determine if the item exists.
+    # NOTE: We must test for *both* -e and -L, because, in the case of a symlink,
+    #       -e tests the *target* of the symlink, and if that doesn't happen to exist, returns false.
+    #       However, -L will tell us if a symlink *itself* exists. 
+    if [[ -e $f || -L $f ]]; then # item exists, apply filter
+      eval "$filterConditional" && files+=( "$f" )
+    else # item does NOT exist
+      # Non-existent items are passed through to ls so that *it* may report
+      # an error - applying a filter to a non-existent item makes no sense,
+      # as it would always be weeded out quietly.
+      files+=( "$f" )
+    fi
+  done
+
+fi
+
+# PRINT RESULTS.
+# Pass matched items, if any, to ls.
+if (( ${#files[@]} > 0 )); then
+  # Invoke `ls` with all items matched, passing all options through.
+  # Usine `exec` to invoke ls ensures that any shell function or alias named `ls` is bypassed.
+  # NOTE: We ALWAYS prepend -d, because we never want to descend into directories to avoid confusion over what is being filtered.
+  # EXECUTION ENDS HERE.
+  exec ls -d "${optsForLs[@]}" "${files[@]}"
+else
+  : # no matches; do nothing and exit successfully, as `ls` would in an empty dir.
+fi
+
+
+####
+# MAN PAGE MARKDOWN SOURCE
+#  - Place a Markdown-formatted version of the man page for this script
+#    inside the here-document below.
+#    The document must be formatted to look good in all 3 viewing scenarios:
+#     - as a man page, after conversion to ROFF with marked-man
+#     - as plain text (raw Markdown source)
+#     - as HTML (rendered Markdown)
+#  Markdown formatting tips:
+#   - GENERAL
+#     To support plain-text rendering in the terminal, limit all lines to 80 chars.,
+#     and, for similar rendering as HTML, *end every line with 2 trailing spaces*.
+#   - HEADINGS
+#     - For better plain-text rendering, leave an empty line after a heading
+#       marked-man will remove it from the ROFF version.
+#     - The first heading must be a level-1 heading containing the utility
+#       name and very brief description; append the manual-section number 
+#       directly to the CLI name; e.g.:
+#         # foo(1) - does bar
+#     - The 2nd, level-2 heading must be '## SYNOPSIS' and the chapter's body
+#       must render reasonably as plain text, because it is printed to stdout
+#       when  `-h`, `--help` is specified:
+#         Use 4-space indentation without markup for both the syntax line and the
+#         block of brief option descriptions; represent option-arguments and operands
+#         in angle brackets; e.g., '<foo>'
+#     - All other headings should be level-2 headings in ALL-CAPS.
+#   - TEXT
+#      - Use NO indentation for regular chapter text; if you do, it will 
+#        be indented further than list items.
+#      - Use 4-space indentation, as usual, for code blocks.
+#      - Markup character-styling markup translates to ROFF rendering as follows:
+#         `...` and **...** render as bolded (red) text
+#         _..._ and *...* render as word-individually underlined text
+#   - LISTS
+#      - Indent list items by 2 spaces for better plain-text viewing, but note
+#        that the ROFF generated by marked-man still renders them unindented.
+#      - End every list item (bullet point) itself with 2 trailing spaces too so
+#        that it renders on its own line.
+#      - Avoid associating more than 1 paragraph with a list item, if possible,
+#        because it requires the following trick, which hampers plain-text readability:
+#        Use '&nbsp;<space><space>' in lieu of an empty line.
+####
+: <<'EOF_MAN_PAGE'
+# fls(1) - type-filtering wrapper around ls
+
+## SYNOPSIS
+
+A type-filtering wrapper around the standard `ls` utility.
+
+    fls [<filter>] [<options-for-ls>] [<dir>]
+    fls [<filter>] [<options-for-ls>] <fileOrDir>...
+
+`<filter>` is a string of filter characters; commonly used are:
+
+    f       file or symlink to file
+    d       dir or symlink to dir
+    l       symlink
+    x       executable file / searchable dir. (by you)
+    e       empty file (zero bytes) or empty dir. (no files or subdirs.)
+
+Filters are combined with logical AND, and filters placed after `^` are negated.  
+E.g., `fls fx^l` lists executable files that aren't symlinks.
+
+Standard options: `--help`, `--man`, `--version`, `--home`
+
+## DESCRIPTION
+
+`fls` is a wrapper around the `ls` utility that enables listing filesystem  
+items filtered by type and certain attributes.
+
+NOTE: For simplicity, this utility is limited to filtering items from a  
+*single* directory:
+
+ * Either: by specifying a single directory (the current one by default)  
+   whose *content* to filter.
+ * Or: as the result of globbing on the command line, by specifying multiple  
+   items all from the same parent directory to filter *themselves*.  
+   Unlike with `ls`, matching items are always printed by filename only, with  
+   the path component, if any, removed.
+
+To allow use of a single utility in both filtering and non-filtering  
+scenarios, specifying a filter is optional and not specifying one makes  
+`fls` behave like `ls`, within the constraints noted.
+
+For convenience and to facilitate definition of aliases, the filter may be  
+placed before or after the options to pass to `ls`, if any.  
+A first operand that is not a valid filter is considered a file operand  
+instead. If what you intended as a filter is treated as a (non-existent)  
+file instead, the implicication is that the filter is invalid; to see the  
+specific reason, specify the filter unambiguously, by:
+
+ * either: placing it before options; e.g.: `fls d -l [...]`  
+ * or: following it with `--`; e.g.: `fls -l d -- [...]`  
+
+Conversely, to explicitly request unfiltered output, use `--`    
+as the first operand; e.g.: `fls -- [...]`  
+
+The exit code is 0, as long as all file operands exist and can be examined.  
+Thus, a filter that matches nothing simply produces no output, without  
+indicating an error condition.
+
+## OPTIONS AND OPERANDS
+
+  * `<options-for-ls>`  
+    Options to pass through to `ls`, such as `-l` to list in long format;  
+    see `man ls`.
+
+  * `<dir>`  
+    A single directory whose items (files and subdirectories) to filter;  
+    defaults to `.` (the current directory).
+  
+  * `<fileOrDir>...`  
+    A list of files and/or subdirectories from a *single* parent directory  
+    to which to apply filtering *directly*.  
+    Typically, this list will come from pathname expansion (globbing) on the  
+    command line.  
+    Note that, unlike with `ls`, option `-d` is implictly in effect for  
+    multiple operands; that is, (sub)directories among the operands are always  
+    filtered and printed as themselves, and their content is neither examined  
+    nor printed.  
+    CAVEAT: If a glob happens to expand to a *single directory*, this utility  
+    will instead target that directory's *content*, as if a single directory  
+    had been explicitly specified - it cannot tell the difference.  
+    When in doubt, use `-d` explicitly.
+
+  * `<filter>`  
+    A filter expression to apply to the set of input files an subdirs so that  
+    only items matching the filter are output.  
+    A filter expression is composed of a string of one or more filters, each  
+    of which is represented by a single character detailed in the next chapter.  
+    AND logic is implicitly applied to multiple filters; i.e., matching items  
+    must meet ALL criteria.  
+    A `^` preceding one or more filters negates their logic; only one `^`  
+    is allowed.  
+    Specifying just `--` explicitly indicates that *no* filtering should be  
+    performed at all.
+
+## FILTERS
+
+Individual filters are characters that are a subset of the type-identifying  
+chars. accepted by `find`'s `-type` primary and Bash's file-test  
+operators, with some custom modifications and extensions, where noted.
+
+Note that with the exception of `l`, all tests are applied to the targets of  
+symlinks, not the symlinks themselves.
+
+### TYPE Filters
+
+  * `f` matches a regular file.
+
+  * `d` matches a directory.
+
+  * `l` matches a symlink; add `f` or `d` to distinguish between symlinks to  
+    files and those to directories; see the TIPS chapter for how to find  
+    broken symlinks.  
+    NOTE: The equivalent Bash operators are `L` or `h`, which are also  
+    accepted.
+
+  * `b`, `c`, `p`, `s` match a block special file, character special file,  
+    a named pipe (FIFO), and a socket, respectively.  
+    NOTE: Bash uses `S` to test for a socket, and `s` to test for nonempty  
+    files; this utility instead uses `e` to test for emptiness - see below.  
+    `S` is, however, also accepted by this utility to test for sockets.
+  
+### ATTRIBUTE Filters
+
+  * `x` matches a file that the current user can execute or a directory that  
+    the current user can search; add `f` or `d` to distinguish.
+
+  * `e` matches an empty file (zero bytes) or empty directory; add `f` or `d`  
+    to distinguish. A directory is only considered empty if it truly contains  
+    no items, whether hidden or not.  
+    NOTE: Bash offers operator `-s`, which uses opposite semantics (test for  
+    non-emptiness) and applies to files only; using `s` that way is NOT  
+    supported by this utility, because it clashes with using `s` to test for  
+    a socket, but you can use `f^e` to emulate it.
+
+  * `r`, `w` matches a file or directory that the current user can read / write.
+
+The following, less common Bash filters are supported as well:
+   
+  * `u` matches if the item's set-user-id permissions bit is set.
+  * `g` matches if the item's set-group-id permissions bit is set.
+  * `k` matches if the item's sticky permissions bit is set.
+  * `G` matches if the item is owned by the effective group ID.
+  * `N` matches if the item has been modified since it was last read.
+  * `O` matches if the item is owned by the effective user ID.
+
+## TIPS
+
+To include hidden items in the set of items to filter, use `ls`'s `-A` option;  
+e.g.:
+
+    fls d -A  # list all subdirs., including hidden ones
+
+To filter among hidden files or directories only, use glob `.*` - this will  
+return only the hidden items; e.g.:
+
+    fls f .*  # show hidden files
+    fls d .*  # show hidden subdirs.
+
+To find broken (dangling) symlinks, use:
+
+    fls l^fdbcps
+
+Since remembering filter characters can be a challenge, you can define  
+aliases; e.g.:
+
+    alias lsd='fls d'     # list directories
+    alias lsexe='fls xf'  # list executables
+    alias lsln='fls L'    # list symlinks
+
+The following alias wraps `fls` with a set of useful `ls` options, such as  
+including hidden items and using human-friendly file sizes:
+
+    alias lsx='fls -FAhl' # fls with useful ls options baked in
+
+## LICENSE
+
+For license information and more, visit the home page by running  
+`fls --home`.
+
+## EXAMPLES
+
+      # List all files in the current dir.
+    fls f
+
+      # List all files in the current dir in long format, including hidden ones.
+    fls f -lA
+
+      # List all hidden files in the current dir.
+    fls f .*
+
+      # List all subdirs. of /    
+    fls d /
+
+      # List all symlinks to files in the current dir.
+    fls lf
+
+      # List all executable files matching c* in /usr/local/bin
+    fls xf /usr/local/bin/c*
+
+      # List all empty (zero bytes) files in the current dir.
+    fls fe
+
+      # List all empty subdirs. in the current dir.
+    fls de
+
+      # Find broken symlinks in the current dir.
+    fls l^fdbcps
+
+      # Use without filters.
+    fls         # same as ls
+    fls -lt ~   # same as ls -lt ~
+    fls -- pg   # same as ls pg, -- unambiguously marks pg as file operand
+
+EOF_MAN_PAGE

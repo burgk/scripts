@@ -206,7 +206,7 @@ while [[ "${valid_stype}" = "false" ]]; do
       valid_user="false"
       while [ "${valid_user}" == "false" ]; do
         read -rep "What is the Windows AD user id to search for in ${user_ad}: " user_suser
-        user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | awk -F" " '{print $2}')"
+        user_sid="$(isi auth users view --zone="${user_zone}" --user="${user_ad}"\\"${user_suser}" 2>/dev/null | grep SID | head -n 1 | awk -F" " '{print $2}')"
         if [[ "${#user_sid}" == "0" ]]; then
           echo -e "${f_red}"
           printf "%55s\n" "-->  ----------------------------------------------  <--"
@@ -383,21 +383,25 @@ elif [[ "${1}" == "delete" ]]; then
   done
 fi
 
-cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
-declare -a audres_list
-audres_list=( *.tmp1 )
-for i in "${!audres_list[@]}"; do
-  echo -e "${f_yellow}-->  Formatting fields from ${audres_list[$i]%.*}..${reset}"
-  cat "${audres_list[$i]}" \
-  | sed -nE 's/[[[:digit:]]{1,}: //gp' \
-  | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
-  | sed -nE 's/>[[:alpha:]]{1,}:/>/gp' \
-  | sed -nE 's/\\\\/\\/gp' \
-  >> "${audres_list[$i]%.*}".tmp2
-  rec_count_3="$(wc -l "${audres_list[$i]%.*}.tmp2" | awk -F" " '{ print $1 }')"
-  echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} records${reset}"
-done
-rm -f *.tmp1
+if (ls *.tmp1 &>/dev/null); then
+  cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
+  declare -a audres_list
+  audres_list=( *.tmp1 )
+  for i in "${!audres_list[@]}"; do
+    echo -e "${f_yellow}-->  Formatting fields from ${audres_list[$i]%.*}..${reset}"
+    cat "${audres_list[$i]}" \
+    | sed -nE 's/[[[:digit:]]{1,}: //gp' \
+    | sed -nE 's/] id:([[:alnum:]]{1,}-){1,}[[:alnum:]]{1,}//gp' \
+    | sed -nE 's/>[[:alpha:]]{1,}:/>/gp' \
+    | sed -nE 's/\\\\/\\/gp' \
+    >> "${audres_list[$i]%.*}".tmp2
+    rec_count_3="$(wc -l "${audres_list[$i]%.*}.tmp2" | awk -F" " '{ print $1 }')"
+    echo -e "${f_yellow}--->  Log contains ${reset}${f_green}${rec_count_3}${reset}${f_yellow} records${reset}"
+  done
+  rm -f *.tmp1
+else
+  nd_clean
+fi
 
 cd "${iaopath}" 2>/dev/null || error_exit "ERROR at line $LINENO: Unable to cd to ${iaopath}"
 if [[ "${user_stype}" == "Path" ]] || [[ "${user_stype}" == "Delete" ]]; then
@@ -468,6 +472,9 @@ echo -e "*******************************${reset}"
 echo -e "Unfortunately, no data matched the search"
 echo -e "criteria provided. If this was a path search"
 echo -e "there may have been path elements missing."
+echo -e "Or in a 'Delete' type search there may have"
+echo -e "not been any delete events for the path or time"
+echo -e "specified."
 echo -e "${f_yellow}-->  Cleaning up"
 if [[ -e "${iaopath}" ]]; then
   rm -rf "${iaopath}"
