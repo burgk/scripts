@@ -16,35 +16,38 @@ f_green="\e[38;2;0;255;0m"
 reset="\e[0m"
 # Tanium packages and files
 taniumpub="./tanium.pub"
-debian67_32="./taniumclient_7.2.314.3476-debian6_i386.deb"
-debian67_64="./taniumclient_7.2.314.3476-debian6_amd64.deb"
-debian8_32="./taniumclient_7.2.314.3476-debian8_i386.deb"
-debian8_64="./taniumclient_7.2.314.3476-debian8_amd64.deb"
-debian9_32="./taniumclient_7.2.314.3476-debian9_i386.deb"
-debian9_64="./taniumclient_7.2.314.3476-debian9_amd64.deb"
-oracle5_32="./TaniumClient-7.2.314.3476-1.oel5.i386.rpm"
-oracle5_64="./TaniumClient-7.2.314.3476-1.oel5.x86_64.rpm"
-oracle6_32="./TaniumClient-7.2.314.3476-1.oel6.i686.rpm"
-oracle6_64="./TaniumClient-7.2.314.3476-1.oel6.x86_64.rpm"
-oracle7_64="./TaniumClient-7.2.314.3476-1.oel7.x86_64.rpm"
-rhel5_32="./TaniumClient-7.2.314.3476-1.rhe5.i386.rpm"
-rhel5_64="./TaniumClient-7.2.314.3476-1.rhe5.x86_64.rpm"
-rhel6_32="./TaniumClient-7.2.314.3476-1.rhe6.i686.rpm"
-rhel6_64="./TaniumClient-7.2.314.3476-1.rhe6.x86_64.rpm"
-rhel7_64="./TaniumClient-7.2.314.3476-1.rhe7.x86_64.rpm"
-suse11_32="./TaniumClient-7.2.314.3476-1.sle11.i586.rpm"
-suse11_64="./TaniumClient-7.2.314.3476-1.sle11.x86_64.rpm"
-suse12_32="./TaniumClient-7.2.314.3476-1.sle12.i586.rpm"
-suse12_64="./TaniumClient-7.2.314.3476-1.sle12.x86_64.rpm"
-ubuntu10_32="./taniumclient_6.0.314.1579-ubuntu10_i386.deb"
-ubuntu10_64="./taniumclient_6.0.314.1579-ubuntu10_amd64.deb"
-ubuntu14_64="./taniumclient_7.2.314.3476-ubuntu14_amd64.deb"
-ubuntu16_64="./taniumclient_7.2.314.3476-ubuntu16_amd64.deb"
-ubuntu18_64="./taniumclient_7.2.314.3476-ubuntu18_amd64.deb"
-aws2_64="./TaniumClient-7.2.314.3476-1.amzn2.x86_64.rpm"
-aws2018_03_64="./TaniumClient-7.2.314.3476-1.amzn2018.03.x86_64.rpm"
+debian67_32="./taniumclient_7.2.314.3632-debian6_i386.deb"
+debian67_64="./taniumclient_7.2.314.3632-debian6_amd64.deb"
+debian8_32="./taniumclient_7.2.314.3632-debian8_i386.deb"
+debian8_64="./taniumclient_7.2.314.3632-debian8_amd64.deb"
+debian9_32="./taniumclient_7.2.314.3632-debian9_i386.deb"
+debian9_64="./taniumclient_7.2.314.3632-debian9_amd64.deb"
+oracle5_32="./TaniumClient-7.2.314.3632-1.oel5.i386.rpm"
+oracle5_64="./TaniumClient-7.2.314.3632-1.oel5.x86_64.rpm"
+oracle6_32="./TaniumClient-7.2.314.3632-1.oel6.i686.rpm"
+oracle6_64="./TaniumClient-7.2.314.3632-1.oel6.x86_64.rpm"
+oracle7_64="./TaniumClient-7.2.314.3632-1.oel7.x86_64.rpm"
+oracle8_64="./TaniumClient-7.2.314.3632-1.oel8.x86_64.rpm"
+rhel5_32="./TaniumClient-7.2.314.3632-1.rhe5.i386.rpm"
+rhel5_64="./TaniumClient-7.2.314.3632-1.rhe5.x86_64.rpm"
+rhel6_32="./TaniumClient-7.2.314.3632-1.rhe6.i686.rpm"
+rhel6_64="./TaniumClient-7.2.314.3632-1.rhe6.x86_64.rpm"
+rhel7_64="./TaniumClient-7.2.314.3632-1.rhe7.x86_64.rpm"
+rhel8_64="./TaniumClient-7.2.314.3632-1.rhe8.x86_64.rpm"
+suse11_32="./TaniumClient-7.2.314.3632-1.sle11.i586.rpm"
+suse11_64="./TaniumClient-7.2.314.3632-1.sle11.x86_64.rpm"
+suse12_32="./TaniumClient-7.2.314.3632-1.sle12.i586.rpm"
+suse12_64="./TaniumClient-7.2.314.3632-1.sle12.x86_64.rpm"
+suse15_64="./TaniumClient-7.2.314.3632-1.sle15.x86_64.rpm"
+ubuntu10_32="./taniumclient_7.2.314.3632-ubuntu10_i386.deb"
+ubuntu10_64="./taniumclient_7.2.314.3632-ubuntu10_amd64.deb"
+ubuntu14_64="./taniumclient_7.2.314.3632-ubuntu14_amd64.deb"
+ubuntu16_64="./taniumclient_7.2.314.3632-ubuntu16_amd64.deb"
+ubuntu18_64="./taniumclient_7.2.314.3632-ubuntu18_amd64.deb"
+aws2_64="./TaniumClient-7.2.314.3632-1.amzn2.x86_64.rpm"
+aws2018_03_64="./TaniumClient-7.2.314.3632-1.amzn2018.03.x86_64.rpm"
 aws2017_09_64="./TaniumClient-7.2.314.3211-1.amzn2017.09.x86_64.rpm"
-aws2017_12_64="./TaniumClient-7.2.314.3211-1.amzn2017.12.x86_64.rpm"
+aws2017_12_64="./TaniumClient-7.2.314.3632-1.amzn2.x86_64.rpm"
 # End misc vars }}}
 
 # Functions {{{
@@ -126,15 +129,20 @@ get_distroversion() { #{{{
 case ${distro} in
   CentOS | Oracle | SLES | openSUSE | Redhat)
     if [[ -e /etc/os-release ]]; then
-      majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
+#      majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | awk -F' ' '{print $1}' | tr -d '"' | awk -F'.' '{print $1}')
+      majversion=$(grep -w ^VERSION_ID /etc/os-release | grep -o '[0-9]\+' | head -n 1)
     elif [[ -e /etc/oracle-release ]]; then # Get old Oracle version
-      majversion=$(awk -F' ' '{print $5}' /etc/oracle-release | awk -F'.' '{print $1}')
+#      majversion=$(awk -F' ' '{print $5}' /etc/oracle-release | awk -F'.' '{print $1}')
+      majversion=$(grep -o '[0-9]\+' /etc/oracle-release | head -n 1)
     elif [[ -e /etc/centos-release ]]; then # Get old CentOS version
-      majversion=$(awk -F' ' '{print $5}' /etc/centos-release | awk -F'.' '{print $1}')
+#      majversion=$(awk -F' ' '{print $3}' /etc/centos-release | awk -F'.' '{print $1}')
+      majversion=$(grep -o '[0-9]\+' /etc/centos-release | head -n 1)
     elif [[ -e /etc/redhat-release ]]; then # Get old Redhat version
-      majversion=$(awk -F' ' '{print $7}' /etc/redhat-release | awk -F'.' '{print $1}')
+#      majversion=$(awk -F' ' '{print $7}' /etc/redhat-release | awk -F'.' '{print $1}')
+      majversion=$(grep -o '[0-9]\+' /etc/redhat-release | head -n 1)
     elif [[ -e /etc/SuSE-release ]]; then # Get old openSUSE
-      majversion=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $2}' | awk -F '.' '{print $1}')
+#      majversion=$(head -n1 /etc/SuSE-release | awk -F' ' '{print $2}' | awk -F '.' '{print $1}')
+      majversion=$(head -n 1 /etc/SuSE-release | grep -o '[0-9]\+' | head -n 1)
     fi
   ;;
   Debian | debian)
@@ -157,10 +165,12 @@ case ${distro} in
     fi
   ;;
   Ubuntu)
-    majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{print $2}' | awk -F'.' '{print $1}')
+#    majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | awk -F'=' '{print $2}' | awk -F'.' '{print $1}')
+    majversion=$(grep -w ^DISTRIB_RELEASE /etc/lsb-release | grep -o '[0-9]\+' | head -n 1)
   ;;
   Amazon)
-    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | tr -d '"')
+#    majversion=$(grep -w ^VERSION_ID /etc/os-release | awk -F'=' '{print $2}' | tr -d '"')
+    majversion=$(grep -w ^VERSION_ID /etc/os-release | grep -o '[0-9]\+' | head -n 1)
   ;;
 esac
 } #}}}
@@ -168,7 +178,7 @@ esac
 validate_distroversion_err() { #{{{
 echo -e "${f_red}"
 echo -e "Error: In function validate_distroversion"
-echo -e "Found distro: ${distro}" 
+echo -e "Found distro: ${distro}"
 echo -e "Found major version: ${majversion}"
 echo -e "This is not a supported combination, exiting."
 echo -e "${reset}"
@@ -177,14 +187,14 @@ exit 1
 
 validate_distroversion() { #{{{
 if [[ ${distro} = "Redhat" ]] || [[ ${distro} = "CentOS" ]] || [[ ${distro} = "Oracle" ]]; then
-  if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]]; then
+  if [[ ${majversion} = "5" ]] || [[ ${majversion} = "6" ]] || [[ ${majversion} = "7" ]] || [[ ${majversion} = "8" ]]; then
     supportedver="true"
     return
   else
     validate_distroversion_err
   fi
 elif [[ ${distro} = *USE ]] || [[  ${distro} = "SLES" ]]; then # SLES or openSUSE
-  if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]]; then
+  if [[ ${majversion} = "11" ]] || [[ ${majversion} = "12" ]] || [[ ${majversion} = "15" ]]; then
     supportedver="true"
     return
   else
@@ -235,7 +245,7 @@ case ${distro} in
       supportedarch="true"
     elif [[ ${majversion} = 6 && ${host64} = "true" ]] || [[ ${majversion} = 6 && ${host64} = "false" ]]; then
       supportedarch="true"
-    elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
+    elif [[ ${majversion} = 7 && ${host64} = "true" ]] || [[ ${majversion} = 8 && ${host64} = "true" ]]; then
       supportedarch="true"
     else
       supportedarch="false"
@@ -295,7 +305,11 @@ select_package() { #{{{
 if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${supportedarch} = "true" ]]; then
   case $distro in
   Redhat | CentOS)
-    if [[ ${majversion} = 7 && ${host64} = "true" ]]; then
+    if [[ ${majversion} = 8 && ${host64} = "true" ]]; then
+      installpkg=${rhel8_64}
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
       installpkg=${rhel7_64}
       installmethod="systemd"
       clientname="taniumclient"
@@ -318,7 +332,11 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
     fi
   ;;
   Oracle)
-    if [[ ${majversion} = 7 && ${host64} = "true" ]]; then
+    if [[ ${majversion} = 8 && ${host64} = "true" ]]; then
+      installpkg=${oracle8_64}
+      installmethod="systemd"
+      clientname="taniumclient"
+    elif [[ ${majversion} = 7 && ${host64} = "true" ]]; then
       installpkg=${oracle7_64}
       installmethod="systemd"
       clientname="taniumclient"
@@ -341,7 +359,11 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
     fi
   ;;
   SLES | openSUSE)
-    if [[ ${majversion} = 12 && ${host64} = "true" ]]; then
+    if [[ ${majversion} = 15 && ${host64} = "true" ]]; then
+      installpkg=${suse15_64}
+      clientname="taniumclient"
+      installmethod="systemd"
+    elif [[ ${majversion} = 12 && ${host64} = "true" ]]; then
       installpkg=${suse12_64}
       clientname="taniumclient"
       installmethod="systemd"
@@ -422,8 +444,8 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
   Amazon)
     if [[ ${majversion} = "2" && ${host64} = "true" ]]; then
       installpkg=${aws2_64}
-      installmethod="svc"
-      clientname="TaniumClient"
+      installmethod="systemd"
+      clientname="taniumclient"
     elif [[ ${majversion} = "2018.03" && ${host64} = "true" ]]; then
       installpkg=${aws2018_03_64}
       installmethod="svc"
@@ -434,8 +456,8 @@ if [[ ${supported_distro} = "true" ]] && [[ ${supportedver} = "true" ]] && [[ ${
       clientname="TaniumClient"
     elif [[ ${majversion} = "2017.12" && ${host64} = "true" ]]; then
       installpkg=${aws2017_12_64}
-      installmethod="svc"
-      clientname="TaniumClient"
+      installmethod="systemd"
+      clientname="taniumclient"
     fi
     ;;
 esac
@@ -472,7 +494,7 @@ if [[ -n ${tmpdomain} ]]; then
   domain=$(echo "${tmpdomain}" | tr '[:lower:]' '[:upper:]') # could use param exp if bash >4
 else
   domain="Unconfigured"
-fi 
+fi
 } #}}}
 
 get_args() { #{{{ <-- WORKING IN HERE, ADDING UNATTENDED INSTALL
@@ -626,7 +648,7 @@ else
   echo -e "  4 - CDOT \t\t 14 - DORA"
   echo -e "  5 - CDPHE \t\t 15 - DPA"
   echo -e "  6 - CDPS \t\t 16 - GOV"
-  echo -e "  7 - CHS \t\t 17 - HCPF"
+  echo -e "  7 - HCC \t\t 17 - HCPF"
   echo -e "  8 - CST \t\t 18 - OIT"
   echo -e "  9 - DMVA \t\t 19 - OITEDIT"
   echo -e " 10 - DNR\n"
@@ -724,7 +746,7 @@ elif [ ${response} -eq 5 ]; then
 elif [ ${response} -eq 6 ]; then
   agency="CDPS"
 elif [ ${response} -eq 7 ]; then
-  agency="CHS"
+  agency="HCC"
 elif [ ${response} -eq 8 ]; then
   agency="CST"
 elif [ ${response} -eq 9 ]; then
@@ -736,7 +758,7 @@ elif [ ${response} -eq 11 ]; then
 elif [ ${response} -eq 12 ]; then
   agency="DOLA"
 elif [ ${response} -eq 13 ]; then
-  agency="DOR"
+  agency="REVENUE"
 elif [ ${response} -eq 14 ]; then
   agency="DORA"
 elif [ ${response} -eq 15 ]; then
