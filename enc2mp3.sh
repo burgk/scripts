@@ -4,8 +4,8 @@
 # Kevin Burg - burg.kevin@gmail.com
 
 # Comments {{{
-# To match both *.opus and *.ogg files, try this in your for loop:
-# ls @(*.ogg|*.opus)
+# To match all file types, try this in your for loop:
+# ls @(*.ogg|*.opus|*.wma)
 # Requires extglob to be set in the shell
 # Set with shopt +s extglob
 
@@ -36,18 +36,18 @@ reset="\e[0m"
 
 # Validate necessary commands {{{
 if command -v ffmpeg > /dev/null 2>&1
- then
-  ff=$(command -v ffmpeg)
- else
-  echo -e "${f_red}Error: ffmpeg not found, exiting${reset}"
+  then
+    ff=$(command -v ffmpeg)
+  else
+    echo -e "${f_red}Error: ffmpeg not found, exiting${reset}"
   exit 1
 fi
 
 if command -v mediainfo > /dev/null 2>&1
- then
-  mi=$(command -v mediainfo)
- else
-  echo -e "${f_red}Error: mediainfo not found, exiting${reset}"
+  then
+    mi=$(command -v mediainfo)
+  else
+    echo -e "${f_red}Error: mediainfo not found, exiting${reset}"
   exit 1
 fi
 # }}}
@@ -55,26 +55,26 @@ fi
 setcodescale() { # {{{
 # let "bitrate = $(${mi} --Inform="General;%OverallBitRate%" ${input}) / 1000"
 (( bitrate = $(${mi} --Inform="General;%OverallBitRate%" "${input}") / 1000 ))
-if [ ${bitrate} -lt "65" ]
- then codescale=9
-elif [ ${bitrate} -lt "85" ]
- then codescale=8
-elif [ ${bitrate} -lt "100" ]
- then codescale=7
-elif [ ${bitrate} -lt "115" ]
- then codescale=6
-elif [ ${bitrate} -lt "130" ]
- then codescale=5
-elif [ ${bitrate} -lt "165" ]
- then codescale=4
-elif [ ${bitrate} -lt "175" ]
- then codescale=3
-elif [ ${bitrate} -lt "190" ]
- then codescale=2
-elif [ ${bitrate} -lt "225" ]
- then codescale=1
-elif [ ${bitrate} -lt "245" ]
- then codescale=0
+if [ ${bitrate} -lt "65" ]; then
+  codescale=9
+elif [ ${bitrate} -lt "85" ]; then
+  codescale=8
+elif [ ${bitrate} -lt "100" ]; then
+  codescale=7
+elif [ ${bitrate} -lt "115" ]; then
+  codescale=6
+elif [ ${bitrate} -lt "130" ]; then
+  codescale=5
+elif [ ${bitrate} -lt "165" ]; then
+  codescale=4
+elif [ ${bitrate} -lt "175" ]; then
+  codescale=3
+elif [ ${bitrate} -lt "190" ]; then
+  codescale=2
+elif [ ${bitrate} -lt "225" ]; then
+  codescale=1
+elif [ ${bitrate} -lt "245" ]; then
+  codescale=0
 fi
 } # }}}
 
@@ -89,20 +89,19 @@ echo -e "Requires ffmpeg and mediainfo to be installed${reset}"
 } # }}}
 
 # Begin main tasks {{{
-if [ $# -eq 1 ]
- then
-   if [ "${infilebase}" != mp3 ]
+if [ $# -eq 1 ]; then
+  if [ "${infilebase}" != mp3 ]
 #  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ] || [ "${infileext}" = m4a ] || [ "${infileext}" = wma ]
-   then
+  then
     setcodescale
     echo -e "${f_green}Encoding ${input} to ${output} at quality setting ${codescale}${reset}"
     encodefile
     exit 0
   else
-   echo -e "${f_red}Only ogg and opus files currently supported. Exiting.${reset}"
-   exit 1
+    echo -e "${f_red}No currently supported files specified. Exiting.${reset}"
+    exit 1
   fi
- else
+else
   errormsg
   exit 1
 fi # }}}
