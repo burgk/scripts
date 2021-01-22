@@ -1,12 +1,14 @@
 #!/bin/bash
 # Purpose: Rebuild Tanium Client package
 # Date: 20190225
+# Date: 20210122 - updated for version 7.4
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
+newver="7.4.4.1250" # NEEDS UPDATED EACH TIME AGENT VERSION CHANGES!
 regendate=$(date +%s)
 builddir="${HOME}/Tanium"
-installer="${HOME}/scripts/installtanium-7.4.sh"
+installer="${HOME}/scripts/installtanium-7.4.sh" # USING NEW 7.4 VERSION NOW
 installersum=$(sha1sum "${installer}" | awk '{print $1}')
 readme="${HOME}/Tanium/README.txt"
 readmesum=$(sha1sum "${readme}" | awk '{print $1}')
@@ -16,46 +18,46 @@ rebuild_package() { #{{{
 cd "${builddir}" || exit
 
 if [[ -e "./TaniumClient${distro}.tar.gz" ]]; then
-  echo -e "Found existing tarball, moving..."
+  echo -e "For ${distro}: Found existing tarball for, moving..."
   mv "./TaniumClient${distro}.tar.gz" "./TaniumClient${distro}-${regendate}.tar.gz"
 fi
 
 if [[ -e "./TaniumClient${distro}/InstallTanium${distro}.sh" ]]; then
   distrosum=$(sha1sum ./TaniumClient"${distro}"/InstallTanium"${distro}".sh | awk '{print $1}')
-  echo -e "Found existing installer, checksum created"
+  echo -e "For ${distro}: Found existing installer, checksum created"
 else
-  echo -e "No installer found, adding it"
+  echo -e "For ${distro}: No installer found, adding it"
   cp "${installer}" "./TaniumClient${distro}/InstallTanium${distro}.sh"
 fi
 
 if [[ -e "./TaniumClient${distro}/README.txt" ]]; then
   distroreadmesum=$(sha1sum ./TaniumClient"${distro}"/README.txt | awk '{print $1}')
-  echo -e "Found existing readme file, checksum created"
+  echo -e "For ${distro}: Found existing readme file, checksum created"
 else
-  echo -e "No existing readme file, adding it"
+  echo -e "For ${distro}: No existing readme file, adding it"
   cp "${readme}" "./TaniumClient${distro}/README.txt"
 fi
 
 if [[ "${installersum}" != "${distrosum}" ]]; then
-  echo -e "Installer checksum mismatch, installing new version of installer"
+  echo -e "For ${distro}: Installer checksum mismatch, installing new version of installer"
   chmod 755 "./TaniumClient${distro}/InstallTanium${distro}.sh"
   cp "${installer}" "./TaniumClient${distro}/InstallTanium${distro}.sh"
   chmod 555 "./TaniumClient${distro}/InstallTanium${distro}.sh"
 else
-  echo -e "Installer checksums match, continuing"
+  echo -e "For ${distro}: Installer checksums match, continuing"
 fi
 
 if [[ "${readmesum}" != "${distroreadmesum}" ]]; then
-  echo -e "Readme checksum mismatch, installing new version of readme"
+  echo -e "For ${distro}: Readme checksum mismatch, installing new version of readme"
   chmod 644 "./TaniumClient${distro}/README.txt"
   cp "${readme}" "./TaniumClient${distro}/README.txt"
   chmod 444 "./TaniumClient${distro}/README.txt"
 else
-  echo -e "Readme checksums match, continuing"
+  echo -e "For ${distro}: Readme checksums match, continuing"
 fi
 
-echo -e "Creating new tarball.."
-tar cvfa ./TaniumClient"${distro}".tar.gz ./TaniumClient"${distro}"
+echo -e "For ${distro}: Creating new tarball" 
+tar cfa ./TaniumClient"${distro}-${newver}".tar.gz ./TaniumClient"${distro}"
 } #}}}
 
 # Begin main tasks {{{
