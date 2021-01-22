@@ -5,7 +5,8 @@
 # NOTE: As of 20200428 DEPTS agency doesn't have an entry
 # NOTE: As of 20200428 Agency #7 has been changed from CHS to HCC
 # NOTE: As of 20200428 Agency #13 has had their tag changed to REVENUE
-# NOTE: Update 20201029 for Tanium Agent version 7.4
+# NOTE: Update 20201029 for Tanium Agent version 7.4.2.1250
+# NOTE: Update 20210122 for latest Tanium Agent - 7.4.4.1250
 
 # Misc variable definions {{{
 # oitserverip=10.51.2.112
@@ -21,32 +22,32 @@ f_green="\e[38;2;0;255;0m"
 reset="\e[0m"
 # Tanium packages and files
 taniumpub="./tanium.pub"
-debian8_32="./taniumclient_7.4.2.2073-debian8_i386.deb"
-debian8_64="./taniumclient_7.4.2.2073-debian8_amd64.deb"
-debian9_32="./taniumclient_7.4.2.2073-debian9_i386.deb"
-debian9_64="./taniumclient_7.4.2.2073-debian9_amd64.deb"
-debian10_64="./taniumclient_7.4.2.2073-debian10_amd64.deb"
-oracle5_32="./TaniumClient-7.4.2.2073-1.oel5.i386.rpm"
-oracle5_64="./TaniumClient-7.4.2.2073-1.oel5.x86_64.rpm"
-oracle6_32="./TaniumClient-7.4.2.2073-1.oel6.i686.rpm"
-oracle6_64="./TaniumClient-7.4.2.2073-1.oel6.x86_64.rpm"
-oracle7_64="./TaniumClient-7.4.2.2073-1.oel7.x86_64.rpm"
-oracle8_64="./TaniumClient-7.4.2.2073-1.oel8.x86_64.rpm"
-rhel5_32="./TaniumClient-7.4.2.2073-1.rhe5.i386.rpm"
-rhel5_64="./TaniumClient-7.4.2.2073-1.rhe5.x86_64.rpm"
-rhel6_32="./TaniumClient-7.4.2.2073-1.rhe6.i686.rpm"
-rhel6_64="./TaniumClient-7.4.2.2073-1.rhe6.x86_64.rpm"
-rhel7_64="./TaniumClient-7.4.2.2073-1.rhe7.x86_64.rpm"
-rhel8_64="./TaniumClient-7.4.2.2073-1.rhe8.x86_64.rpm"
-suse12_32="./TaniumClient-7.4.2.2073-1.sle12.i586.rpm"
-suse12_64="./TaniumClient-7.4.2.2073-1.sle12.x86_64.rpm"
-suse15_64="./TaniumClient-7.4.2.2073-1.sle15.x86_64.rpm"
-ubuntu14_64="./taniumclient_7.4.2.2073-ubuntu14_amd64.deb"
-ubuntu16_64="./taniumclient_7.4.2.2073-ubuntu16_amd64.deb"
-ubuntu18_64="./taniumclient_7.4.2.2073-ubuntu18_amd64.deb"
-ubuntu20_64="./taniumclient_7.4.2.2073-ubuntu20_amd64.deb"
-aws2_64="./TaniumClient-7.4.2.2073-1.amzn2.x86_64.rpm"
-aws2018_03_64="./TaniumClient-7.4.2.2073-1.amzn2018.03.x86_64.rpm"
+debian8_32="./taniumclient_7.4.4.1250-debian8_i386.deb"
+debian8_64="./taniumclient_7.4.4.1250-debian8_amd64.deb"
+debian9_32="./taniumclient_7.4.4.1250-debian9_i386.deb"
+debian9_64="./taniumclient_7.4.4.1250-debian9_amd64.deb"
+debian10_64="./taniumclient_7.4.4.1250-debian10_amd64.deb"
+oracle5_32="./TaniumClient-7.4.4.1250-1.oel5.i386.rpm"
+oracle5_64="./TaniumClient-7.4.4.1250-1.oel5.x86_64.rpm"
+oracle6_32="./TaniumClient-7.4.4.1250-1.oel6.i686.rpm"
+oracle6_64="./TaniumClient-7.4.4.1250-1.oel6.x86_64.rpm"
+oracle7_64="./TaniumClient-7.4.4.1250-1.oel7.x86_64.rpm"
+oracle8_64="./TaniumClient-7.4.4.1250-1.oel8.x86_64.rpm"
+rhel5_32="./TaniumClient-7.4.4.1250-1.rhe5.i386.rpm"
+rhel5_64="./TaniumClient-7.4.4.1250-1.rhe5.x86_64.rpm"
+rhel6_32="./TaniumClient-7.4.4.1250-1.rhe6.i686.rpm"
+rhel6_64="./TaniumClient-7.4.4.1250-1.rhe6.x86_64.rpm"
+rhel7_64="./TaniumClient-7.4.4.1250-1.rhe7.x86_64.rpm"
+rhel8_64="./TaniumClient-7.4.4.1250-1.rhe8.x86_64.rpm"
+suse12_32="./TaniumClient-7.4.4.1250-1.sle12.i586.rpm"
+suse12_64="./TaniumClient-7.4.4.1250-1.sle12.x86_64.rpm"
+suse15_64="./TaniumClient-7.4.4.1250-1.sle15.x86_64.rpm"
+ubuntu14_64="./taniumclient_7.4.4.1250-ubuntu14_amd64.deb"
+ubuntu16_64="./taniumclient_7.4.4.1250-ubuntu16_amd64.deb"
+ubuntu18_64="./taniumclient_7.4.4.1250-ubuntu18_amd64.deb"
+ubuntu20_64="./taniumclient_7.4.4.1250-ubuntu20_amd64.deb"
+aws2_64="./TaniumClient-7.4.4.1250-1.amzn2.x86_64.rpm"
+aws2018_03_64="./TaniumClient-7.4.4.1250-1.amzn2018.03.x86_64.rpm"
 # End misc vars }}}
 
 # Functions {{{
@@ -147,7 +148,7 @@ case ${distro} in
   Debian | debian)
     # Debian codenames: Squeeze=6, Wheezy=7, Jessie=8, Stretch=9, Buster=10, Bullseye=11, sid=experimental
     tmpversion=$(awk -F. '{print $1}' /etc/debian_version)
-    if [[ ${tmpversion} = "6" ]] || [[ ${tmpversion} = "7" ]] || [[ ${tmpversion} = "8" ]] || [[ ${tmpversion} = "9" ]]; then
+    if [[ ${tmpversion} = "6" ]] || [[ ${tmpversion} = "7" ]] || [[ ${tmpversion} = "8" ]] || [[ ${tmpversion} = "9" ]] || [[ ${tmpversion} = "10" ]]; then
       majversion=${tmpversion}
     elif [[ ${tmpversion} = *queeze* ]]; then
       majversion=6
@@ -262,7 +263,9 @@ case ${distro} in
     fi
     ;;
   SLES | openSUSE)
-    if [[ ${supportedver} = "true" ]]; then
+    if [[ ${majversion} = 12 && ${host64} = "true" ]] || [[ ${majversion} = 12 && ${host64} = "false" ]];then
+      supportedarch="true"
+    elif [[ ${majversion} = 15 && ${host64} = "true" ]]; then
       supportedarch="true"
     else
       supportedarch="false"
