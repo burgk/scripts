@@ -5,7 +5,7 @@
 
 # Misc variable definitions {{{
 builddir="${HOME}/Tanium"
-installer="${HOME}/scripts/installtanium.sh"
+installer="${HOME}/scripts/installtanium-7.4.sh"
 installersum=$(sha1sum "${installer}" | awk '{print $1}')
 readme="${HOME}/Tanium/README.txt"
 readmesum=$(sha1sum "${readme}" | awk '{print $1}')
