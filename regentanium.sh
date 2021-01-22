@@ -4,6 +4,7 @@
 # Kevin Burg - kevin.burg@state.co.us
 
 # Misc variable definitions {{{
+regendate=$(date +%s)
 builddir="${HOME}/Tanium"
 installer="${HOME}/scripts/installtanium-7.4.sh"
 installersum=$(sha1sum "${installer}" | awk '{print $1}')
@@ -16,7 +17,7 @@ cd "${builddir}" || exit
 
 if [[ -e "./TaniumClient${distro}.tar.gz" ]]; then
   echo -e "Found existing tarball, moving..."
-  mv "./TaniumClient${distro}.tar.gz" "./TaniumClient${distro}.tar.$(date +%s).gz"
+  mv "./TaniumClient${distro}.tar.gz" "./TaniumClient${distro}-${regendate}.tar.gz"
 fi
 
 if [[ -e "./TaniumClient${distro}/InstallTanium${distro}.sh" ]]; then
