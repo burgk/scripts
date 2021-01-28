@@ -31,7 +31,7 @@ done
 # Begin main tasks {{{
 if [[ "$#" = "0" ]]; then
   if (( EUID != 0 )); then
-    echo -e "WARNING: Not running as EUID 0, results may not be accurate!"
+    echo -e "WARNING: Not running as EUID 0, some directories may not be accessible"
     read -rp "Continue anyway? " response
     case "${response}" in
     y | Y)
