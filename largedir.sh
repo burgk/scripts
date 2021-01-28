@@ -18,7 +18,8 @@ for dir in .[!.]* *; do
   if [[ -d "${dir}" ]]; then
     cd "${dir}" 2>/dev/null || return 
     size=$("du" -s 2>/dev/null | cut -f1)
-    echo -e "${size};${dir}" >> "${tmpfile}"
+#    echo -e "${size};${dir}" >> "${tmpfile}"
+    printf "%12d;%-30s\n" ${size} ${dir} >> "${tmpfile}"
     cd .. || exit
   else
     :
@@ -56,7 +57,7 @@ else
 fi
 
 echo -e "Size  in  KB;Directory" > "${outfile}"
-echo -e "---m--g--t--;---------" >> "${outfile}"
+echo -e "--T--G--M---;---------" >> "${outfile}"
 sort -rn "${tmpfile}" >> "${outfile}"
 rm "${tmpfile}"
 
