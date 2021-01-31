@@ -57,7 +57,7 @@ else
 fi
 
 echo -e "Size  in  KB;Directory" > "${outfile}"
-echo -e "--T--G--M---;---------" >> "${outfile}"
+echo -e "TttGggMmmKkk;---------" >> "${outfile}"
 sort -rn "${tmpfile}" >> "${outfile}"
 rm "${tmpfile}"
 
