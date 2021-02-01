@@ -18,7 +18,8 @@ for dir in .[!.]* *; do
   if [[ -d "${dir}" ]]; then
     cd "${dir}" 2>/dev/null || return 
     size=$("du" -s 2>/dev/null | cut -f1)
-    echo -e "${size};${dir}" >> "${tmpfile}"
+#    echo -e "${size};${dir}" >> "${tmpfile}"
+    printf "%12d;%-30s\n" ${size} ${dir} >> "${tmpfile}"
     cd .. || exit
   else
     :
@@ -31,7 +32,7 @@ done
 # Begin main tasks {{{
 if [[ "$#" = "0" ]]; then
   if (( EUID != 0 )); then
-    echo -e "WARNING: Not running as EUID 0, results may not be accurate!"
+    echo -e "WARNING: Not running as EUID 0, some directories may not be accessible"
     read -rp "Continue anyway? " response
     case "${response}" in
     y | Y)
@@ -56,7 +57,7 @@ else
 fi
 
 echo -e "Size  in  KB;Directory" > "${outfile}"
-echo -e "---m--g--t--;---------" >> "${outfile}"
+echo -e "T--G--M--K--;---------" >> "${outfile}"
 sort -rn "${tmpfile}" >> "${outfile}"
 rm "${tmpfile}"
 
