@@ -106,9 +106,10 @@ if [ $# -eq 1 ]; then
   then
     setcodescale
     echo -e "${f_green}"
-    printf "%8s %s\n" "Quality:" "${bitrate}k"
-    printf "%8s %s\n" "Source:" "${input}"
-    printf "%8s %s\n" "Dest:" "${output}"
+    printf "%10s %s\n" "Codescale:" "${codescale}"
+    printf "%10s %s\n" "Quality:" "${bitrate}k"
+    printf "%10s %s\n" "Source:" "${input}"
+    printf "%10s %s\n" "Dest:" "${output}"
     echo -e "${reset}"
     encodefile
     exit 0
