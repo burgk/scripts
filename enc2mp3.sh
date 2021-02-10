@@ -37,7 +37,7 @@ reset="\e[0m"
 # }}}
 
 # Validate necessary commands {{{
-if command -v ffmpeg > /dev/null 2>&1
+if command -v ffmpeg &>/dev/null
   then
     ff=$(command -v ffmpeg)
   else
@@ -45,11 +45,11 @@ if command -v ffmpeg > /dev/null 2>&1
   exit 1
 fi
 
-if command -v mediainfo > /dev/null 2>&1
+if command -v mediainfo &>/dev/null
   then
     mi=$(command -v mediainfo)
     bitM="True"
-elif command -v soxi > /dev/null 2>&1
+elif command -v soxi &>/dev/null
   then
     mi=$(command -v soxi)
   else
@@ -105,9 +105,11 @@ if [ $# -eq 1 ]; then
 #  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ] || [ "${infileext}" = m4a ] || [ "${infileext}" = wma ]
   then
     setcodescale
-    echo -e "${f_green}Encoding at quality setting ${codescale}:"
-    echo -e "Source:\t${input}"
-    echo -e "Dest:\t${output} ${reset}\n"
+    echo -e "${f_green}"
+    printf "%8s %s\n" "Quality:" "${bitrate}k"
+    printf "%8s %s\n" "Source:" "${input}"
+    printf "%8s %s\n" "Dest:" "${output}"
+    echo -e "${reset}"
     encodefile
     exit 0
   else
