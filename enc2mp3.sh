@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Purpose: Wrapper for ffmpeg to convert ogg, opus, wma and m4a  files to .mp3 files
 # Date: 20201201
+# Date: 20210209 - Update messages, add soxi as mi option
 # Kevin Burg - burg.kevin@gmail.com
 
 # Comments {{{
@@ -29,6 +30,7 @@ input=${1}
 infilebase=${1%.*}
 infileext=${1##*.}
 output=${infilebase}.mp3
+bitM="False"
 f_red="\e[38;2;255;0;0m"
 f_green="\e[38;2;0;255;0m"
 reset="\e[0m"
@@ -39,22 +41,31 @@ if command -v ffmpeg > /dev/null 2>&1
   then
     ff=$(command -v ffmpeg)
   else
-    echo -e "${f_red}Error: ffmpeg not found, exiting${reset}"
+    echo -e "${f_red}ERROR: ffmpeg not found, exiting${reset}"
   exit 1
 fi
 
 if command -v mediainfo > /dev/null 2>&1
   then
     mi=$(command -v mediainfo)
+    bitM="True"
+elif command -v soxi > /dev/null 2>&1
+  then
+    mi=$(command -v soxi)
   else
-    echo -e "${f_red}Error: mediainfo not found, exiting${reset}"
+    echo -e "${f_red}ERROR: mediainfo or soxi not found, exiting${reset}"
   exit 1
 fi
 # }}}
 
 setcodescale() { # {{{
 # let "bitrate = $(${mi} --Inform="General;%OverallBitRate%" ${input}) / 1000"
-(( bitrate = $(${mi} --Inform="General;%OverallBitRate%" "${input}") / 1000 ))
+if [ $bitM == "True" ]; then
+  (( bitrate = $(${mi} --Inform="General;%OverallBitRate%" "${input}") / 1000 ))
+else
+  bitrate=$("${mi}" "${input}" | grep "Bit Rate" | cut -d':' -f2 | sed -e '{ s/[[:alpha:]]// ; s/[[:space:]]// }')
+fi
+
 if [ ${bitrate} -lt "65" ]; then
   codescale=9
 elif [ ${bitrate} -lt "85" ]; then
@@ -94,7 +105,9 @@ if [ $# -eq 1 ]; then
 #  if [ "${infileext}" = ogg ] || [ "${infileext}" = opus ] || [ "${infileext}" = m4a ] || [ "${infileext}" = wma ]
   then
     setcodescale
-    echo -e "${f_green}Encoding ${input} to ${output} at quality setting ${codescale}${reset}"
+    echo -e "${f_green}Encoding at quality setting ${codescale}:"
+    echo -e "Source:\t${input}"
+    echo -e "Dest:\t${output} ${reset}\n"
     encodefile
     exit 0
   else
