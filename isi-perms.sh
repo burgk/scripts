@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-admgrp="CDA-Admins"
-zone="CDA"
+admgrp="dphe_admins"
+zone="CDPHE"
 declare -a sharelist=()
 
 while read -r line; do sharelist+=("$line"); done < <( isi smb shares list --zone="${zone}" -a -z | awk -F'/' '{ print $1 }' | sed 's/ *$//' )
@@ -17,11 +17,11 @@ for share in "${!sharelist[@]}"; do
     else
       echo -e "${sharelist[$share]} has "${admgrp}" without run-as-root, fixing.."
       echo -e "--running perms modify cmd here--"
-      isi smb shares permission modify "${sharelist[$share]}" --group "${admgrp}" --run-as-root --zone="${zone}"
+#      isi smb shares permission modify "${sharelist[$share]}" --group "${admgrp}" --run-as-root --zone="${zone}"
     fi
   else
     echo -e "${sharelist[$share]} does NOT have "${admgrp}", adding.."
     echo -e "--running perms add cmd here--"
-     isi smb shares permission create "${sharelist[$share]}" --group "${admgrp}" --run-as-root --zone="${zone}"
+#     isi smb shares permission create "${sharelist[$share]}" --group "${admgrp}" --run-as-root --zone="${zone}"
   fi
 done
