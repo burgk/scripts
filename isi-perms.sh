@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-admgrp="cdhs_admins"
-zone="CDHSHIPAA"
+admgrp="CDA-Admins"
+zone="CDA"
 declare -a sharelist=()
 
 while read -r line; do sharelist+=("$line"); done < <( isi smb shares list --zone="${zone}" -a -z | awk -F'/' '{ print $1 }' | sed 's/ *$//' )
